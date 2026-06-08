@@ -19,8 +19,8 @@ export const CreateEventSchema = z.object({
   description: z.string().max(2000).nullable().optional(),
   startTime: z.coerce.date(),
   endTime: z.coerce.date(),
-  color: z.string().default("#3b82f6"),
-  allDay: z.boolean().default(false),
+  color: z.string().optional().default("#3b82f6"),
+  allDay: z.boolean().optional().default(false),
 });
 
 export const UpdateEventSchema = CreateEventSchema.partial().extend({
@@ -44,15 +44,15 @@ export const CreateBudgetSchema = z.object({
 
 export const CreateHabitSchema = z.object({
   name: z.string().min(1).max(100),
-  icon: z.string().max(10).default("✅"),
-  color: z.string().default("#10b981"),
-  frequency: z.enum(["DAILY", "WEEKLY"]).default("DAILY"),
+  icon: z.string().max(10).optional().default("✅"),
+  color: z.string().optional().default("#10b981"),
+  frequency: z.enum(["DAILY", "WEEKLY"]).optional().default("DAILY"),
 });
 
 export const CreateNoteSchema = z.object({
   title: z.string().min(1).max(200),
-  content: z.string().default(""),
-  pinned: z.boolean().default(false),
+  content: z.string().optional().default(""),
+  pinned: z.boolean().optional().default(false),
 });
 
 export const UpdateNoteSchema = CreateNoteSchema.partial().extend({
