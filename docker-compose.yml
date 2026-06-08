@@ -1,0 +1,25 @@
+version: '3.8'
+
+services:
+  ashhq:
+    build: .
+    container_name: ashhq
+    restart: unless-stopped
+    ports:
+      - "3000:3000"
+    volumes:
+      - ashhq-data:/app/prisma
+    environment:
+      - DATABASE_URL=file:/app/prisma/ashhq.db
+      - SESSION_SECRET=change-this-to-a-secure-random-string
+      # - OPENAI_API_KEY=sk-...
+      # - WEATHER_API_KEY=...
+    healthcheck:
+      test: ["CMD", "wget", "-q", "--spider", "http://localhost:3000/api/weather"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+
+volumes:
+  ashhq-data:
+    driver: local
