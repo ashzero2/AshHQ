@@ -1,0 +1,145 @@
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = "file:./ashhq.db"
+}
+
+model Settings {
+  id              String   @id @default("singleton")
+  pin             String
+  aiProvider      String   @default("OPENAI")
+  openaiApiKey    String?
+  openaiModel     String   @default("gpt-4o-mini")
+  ollamaBaseUrl   String   @default("http://localhost:11434")
+  ollamaModel     String   @default("llama3.2")
+  weatherApiKey   String?
+  weatherCity     String   @default("Mumbai")
+  temperatureUnit String   @default("C")
+  theme           String   @default("dark")
+  dashboardLayout String   @default("{}")
+  createdAt       DateTime @default(now())
+  updatedAt       DateTime @updatedAt
+}
+
+model Task {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  priority    String    @default("MEDIUM")
+  status      String    @default("TODO")
+  category    String?
+  dueDate     DateTime?
+  completedAt DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([status])
+  @@index([priority])
+  @@index([dueDate])
+}
+
+model CalendarEvent {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  startTime   DateTime
+  endTime     DateTime
+  color       String   @default("#3b82f6")
+  allDay      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  @@index([startTime, endTime])
+}
+
+model Transaction {
+  id          String   @id @default(cuid())
+  amount      Float
+  type        String
+  category    String
+  description String?
+  date        DateTime
+  createdAt   DateTime @default(now())
+
+  @@index([type])
+  @@index([date])
+  @@index([category])
+}
+
+model Budget {
+  id        String   @id @default(cuid())
+  category  String
+  amount    Float
+  month     Int
+  year      Int
+  createdAt DateTime @default(now())
+
+  @@unique([category, month, year])
+}
+
+model Habit {
+  id        String     @id @default(cuid())
+  name      String
+  icon      String     @default("✅")
+  color     String     @default("#10b981")
+  frequency String     @default("DAILY")
+  createdAt DateTime   @default(now())
+  logs      HabitLog[]
+}
+
+model HabitLog {
+  id        String  @id @default(cuid())
+  habitId   String
+  date      String
+  completed Boolean @default(true)
+  habit     Habit   @relation(fields: [habitId], references: [id], onDelete: Cascade)
+
+  @@unique([habitId, date])
+  @@index([habitId])
+  @@index([date])
+}
+
+model Note {
+  id        String   @id @default(cuid())
+  title     String
+  content   String   @default("")
+  pinned    Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([pinned])
+}
+
+model QuickLink {
+  id        String   @id @default(cuid())
+  title     String
+  url       String
+  icon      String?
+  category  String?
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+
+  @@index([sortOrder])
+}
+
+model ChatConversation {
+  id        String        @id @default(cuid())
+  title     String
+  messages  ChatMessage[]
+  createdAt DateTime      @default(now())
+  updatedAt DateTime      @updatedAt
+}
+
+model ChatMessage {
+  id             String           @id @default(cuid())
+  conversationId String
+  role           String
+  content        String
+  conversation   ChatConversation @relation(fields: [conversationId], references: [id], onDelete: Cascade)
+  createdAt      DateTime         @default(now())
+
+  @@index([conversationId])
+}
