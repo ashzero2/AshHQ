@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createHabit, deleteHabit, toggleHabitLog } from "@/lib/services/habits";
 import { Plus, Trash2, Target, Flame, Trophy, CheckCircle2 } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { toast } from "sonner";
 import { format, subDays } from "date-fns";
 import { cn } from "@/lib/utils";
@@ -66,6 +67,7 @@ export function HabitView({ habits }: HabitViewProps) {
   const [isPending, startTransition] = useTransition();
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("✅");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Compute today in the client's local timezone to avoid UTC server mismatch
   const today = format(new Date(), "yyyy-MM-dd");
@@ -191,6 +193,8 @@ export function HabitView({ habits }: HabitViewProps) {
                 {/* Toggle */}
                 <button
                   onClick={() => handleToggle(habit.id)}
+                  aria-label={doneToday ? `Mark ${habit.name} as incomplete` : `Mark ${habit.name} as complete`}
+                  aria-pressed={doneToday}
                   className={cn(
                     "w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-all",
                     doneToday
@@ -207,8 +211,9 @@ export function HabitView({ habits }: HabitViewProps) {
                       {habit.name}
                     </p>
                     <button
-                      onClick={() => handleDelete(habit.id)}
-                      className="opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-rose p-1 rounded hover:bg-rose/10 transition-all flex-shrink-0 -mt-0.5"
+                      onClick={() => setConfirmDelete(habit.id)}
+                      aria-label="Delete habit"
+                      className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-subtle-fg hover:text-rose p-1 rounded hover:bg-rose/10 transition-all flex-shrink-0 -mt-0.5 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose"
                     >
                       <Trash2 size={12} />
                     </button>
@@ -232,6 +237,15 @@ export function HabitView({ habits }: HabitViewProps) {
             );
           })}
         </div>
+      )}
+
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Delete habit?"
+          description={`"${habits.find((h) => h.id === confirmDelete)?.name}" and all its history will be removed.`}
+          onConfirm={() => { handleDelete(confirmDelete); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

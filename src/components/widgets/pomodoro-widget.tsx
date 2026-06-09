@@ -135,12 +135,14 @@ export function PomodoroWidget() {
       <div className="flex items-center gap-2">
         <button
           onClick={reset}
+          aria-label="Reset timer"
           className="p-2 rounded-lg text-subtle-fg hover:text-muted-fg hover:bg-surface-raised transition-all"
         >
           <RotateCcw size={13} />
         </button>
         <button
           onClick={toggleRunning}
+          aria-label={running ? "Pause timer" : "Start timer"}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-semibold text-background transition-all hover:opacity-90"
           style={{ background: ringColor }}
         >
@@ -150,8 +152,8 @@ export function PomodoroWidget() {
         {mode === "WORK" && (
           <button
             onClick={() => switchMode("SHORT_BREAK")}
+            aria-label="Take a short break"
             className="p-2 rounded-lg text-subtle-fg hover:text-emerald hover:bg-emerald/10 transition-all"
-            title="Take a break"
           >
             <Coffee size={13} />
           </button>

@@ -72,6 +72,7 @@ export function Sidebar() {
           </Link>
           <button
             onClick={() => setSidebarOpen(false)}
+            aria-label="Close navigation"
             className="lg:hidden text-muted-fg hover:text-foreground transition-colors p-1 rounded"
           >
             <X size={16} />
@@ -94,6 +95,7 @@ export function Sidebar() {
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
+                aria-current={isActive ? "page" : undefined}
                 className={cn(
                   "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative",
                   isActive
@@ -120,6 +122,7 @@ export function Sidebar() {
             <Link
               href="/settings"
               onClick={() => setSidebarOpen(false)}
+              aria-current={pathname === "/settings" ? "page" : undefined}
               className={cn(
                 "flex items-center gap-2.5 px-3 py-2 rounded-lg text-[13px] font-medium transition-all duration-150 relative",
                 pathname === "/settings"

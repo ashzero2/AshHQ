@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { createLink, deleteLink } from "@/lib/services/links";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink, Link2, Search, X, FolderOpen } from "lucide-react";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { QuickLink } from "@prisma/client";
 
 interface LinksViewProps {
@@ -19,6 +20,7 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   // Form state
   const [title, setTitle] = useState("");
@@ -156,7 +158,7 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
             className="w-full bg-surface-raised border border-outline rounded-lg pl-8 pr-8 py-2 text-sm text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/60 transition-colors"
           />
           {search && (
-            <button onClick={() => setSearch("")} className="absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle-fg hover:text-muted-fg">
+            <button onClick={() => setSearch("")} aria-label="Clear search" className="absolute right-2.5 top-1/2 -translate-y-1/2 text-subtle-fg hover:text-muted-fg">
               <X size={12} />
             </button>
           )}
@@ -192,6 +194,16 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
         )}
       </div>
 
+      {confirmDelete && (
+        <ConfirmDialog
+          title="Remove link?"
+          description={`"${links.find((l) => l.id === confirmDelete)?.title}" will be permanently removed.`}
+          onConfirm={() => { handleDelete(confirmDelete); setConfirmDelete(null); }}
+          onCancel={() => setConfirmDelete(null)}
+          confirmLabel="Remove"
+        />
+      )}
+
       {/* Links grid */}
       <div className="flex-1 overflow-y-auto min-h-0">
         {filtered.length === 0 ? (
@@ -223,17 +235,17 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
                   <CategoryGroup
                     name="Uncategorised"
                     links={filtered.filter((l) => !l.category)}
-                    onDelete={handleDelete}
+                    onDelete={setConfirmDelete}
                   />
                 )}
                 {categories.map((cat) => {
                   const catLinks = filtered.filter((l) => l.category === cat);
                   if (!catLinks.length) return null;
-                  return <CategoryGroup key={cat} name={cat} links={catLinks} onDelete={handleDelete} />;
+                  return <CategoryGroup key={cat} name={cat} links={catLinks} onDelete={setConfirmDelete} />;
                 })}
               </div>
             ) : (
-              <LinkGrid links={filtered} onDelete={handleDelete} />
+              <LinkGrid links={filtered} onDelete={setConfirmDelete} />
             )}
           </>
         )}
@@ -310,7 +322,8 @@ function LinkCard({ link, onDelete }: { link: QuickLink; onDelete: (id: string) 
       {/* Delete */}
       <button
         onClick={(e) => { e.preventDefault(); onDelete(link.id); }}
-        className="opacity-0 group-hover:opacity-100 p-1.5 rounded-lg text-subtle-fg hover:text-rose hover:bg-rose/10 transition-all flex-shrink-0"
+        aria-label="Delete link"
+        className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 p-1.5 rounded-lg text-subtle-fg hover:text-rose hover:bg-rose/10 transition-all flex-shrink-0 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose"
       >
         <Trash2 size={13} />
       </button>

@@ -6,6 +6,7 @@ import { Plus, Trash2, Pin, StickyNote, Save, ArrowLeft, X } from "lucide-react"
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import type { Note } from "@prisma/client";
 
 interface NotesViewProps { notes: Note[]; }
@@ -19,6 +20,7 @@ export function NotesView({ notes }: NotesViewProps) {
   const [isPending, startTransition] = useTransition();
   const [title, setTitle] = useState("");
   const [content, setContent] = useState("");
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();
@@ -48,6 +50,7 @@ export function NotesView({ notes }: NotesViewProps) {
       await deleteNote(id);
       toast.success("Note deleted");
       setEditingNote(null);
+      setConfirmDelete(null);
     });
   };
 
@@ -68,7 +71,8 @@ export function NotesView({ notes }: NotesViewProps) {
           </button>
           <div className="flex-1" />
           <button
-            onClick={() => handleDelete(editingNote.id)}
+            onClick={() => setConfirmDelete(editingNote.id)}
+            aria-label="Delete note"
             className="flex items-center gap-1 text-[12px] text-subtle-fg hover:text-rose transition-colors p-1.5 rounded-lg hover:bg-rose/10"
             disabled={isPending}
           >
@@ -96,6 +100,15 @@ export function NotesView({ notes }: NotesViewProps) {
           className="w-full bg-surface border border-outline rounded-xl p-4 text-sm text-muted-fg min-h-[320px] focus:outline-none focus:border-accent/40 resize-none font-mono leading-relaxed"
           placeholder="Write your note…"
         />
+
+        {confirmDelete && (
+          <ConfirmDialog
+            title="Delete note?"
+            description={`"${editingNote.title}" will be permanently removed.`}
+            onConfirm={() => handleDelete(confirmDelete)}
+            onCancel={() => setConfirmDelete(null)}
+          />
+        )}
       </div>
     );
   }
@@ -165,9 +178,17 @@ export function NotesView({ notes }: NotesViewProps) {
           {notes.map((note) => (
             <div
               key={note.id}
+              role="button"
+              tabIndex={0}
               onClick={() => { setEditingNote(note); setTitle(note.title); setContent(note.content); }}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" || e.key === " ") {
+                  e.preventDefault();
+                  setEditingNote(note); setTitle(note.title); setContent(note.content);
+                }
+              }}
               className={cn(
-                "group cursor-pointer p-4 rounded-xl border bg-surface hover:bg-surface-raised transition-all",
+                "group cursor-pointer p-4 rounded-xl border bg-surface hover:bg-surface-raised transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
                 note.pinned ? "border-accent/30" : "border-outline hover:border-outline-strong"
               )}
             >
@@ -176,18 +197,20 @@ export function NotesView({ notes }: NotesViewProps) {
                 <div className="flex gap-0.5 flex-shrink-0">
                   <button
                     onClick={(e) => { e.stopPropagation(); handlePin(note.id); }}
+                    aria-label={note.pinned ? "Unpin note" : "Pin note"}
                     className={cn(
                       "p-1 rounded transition-all",
                       note.pinned
                         ? "text-accent"
-                        : "opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-accent"
+                        : "opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-subtle-fg hover:text-accent"
                     )}
                   >
                     <Pin size={11} />
                   </button>
                   <button
-                    onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
-                    className="opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-rose p-1 rounded transition-all"
+                    onClick={(e) => { e.stopPropagation(); setConfirmDelete(note.id); }}
+                    aria-label="Delete note"
+                    className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-subtle-fg hover:text-rose p-1 rounded transition-all focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose"
                   >
                     <X size={11} />
                   </button>
@@ -202,6 +225,15 @@ export function NotesView({ notes }: NotesViewProps) {
             </div>
           ))}
         </div>
+      )}
+
+      {confirmDelete && !editingNote && (
+        <ConfirmDialog
+          title="Delete note?"
+          description={`"${notes.find((n) => n.id === confirmDelete)?.title}" will be permanently removed.`}
+          onConfirm={() => handleDelete(confirmDelete)}
+          onCancel={() => setConfirmDelete(null)}
+        />
       )}
     </div>
   );

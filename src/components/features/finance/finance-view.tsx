@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { createTransaction, deleteTransaction } from "@/lib/services/finance";
 import { formatCurrency, cn } from "@/lib/utils";
+import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/constants";
 import {
   Plus,
@@ -70,6 +71,7 @@ function MonthlyBarChart({ data }: { data: MonthData[] }) {
 export function FinanceView({ transactions, summary, monthlyData }: FinanceViewProps) {
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -281,8 +283,9 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
                 {tx.type === "INCOME" ? "+" : "−"}{formatCurrency(tx.amount)}
               </span>
               <button
-                onClick={() => handleDelete(tx.id)}
-                className="opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-rose p-1.5 rounded-lg hover:bg-rose/10 transition-all"
+                onClick={() => setConfirmDelete(tx.id)}
+                aria-label="Delete transaction"
+                className="opacity-0 group-hover:opacity-100 focus-visible:opacity-100 text-subtle-fg hover:text-rose p-1.5 rounded-lg hover:bg-rose/10 transition-all focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-rose"
               >
                 <Trash2 size={13} />
               </button>
@@ -293,6 +296,15 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
               <Wallet size={28} className="mx-auto mb-2 text-subtle-fg" />
               <p className="text-sm text-muted-fg">No transactions yet</p>
             </div>
+          )}
+
+          {confirmDelete && (
+            <ConfirmDialog
+              title="Delete transaction?"
+              description={`"${transactions.find((t) => t.id === confirmDelete)?.description || transactions.find((t) => t.id === confirmDelete)?.category}" will be permanently removed.`}
+              onConfirm={() => { handleDelete(confirmDelete); setConfirmDelete(null); }}
+              onCancel={() => setConfirmDelete(null)}
+            />
           )}
         </div>
       </div>

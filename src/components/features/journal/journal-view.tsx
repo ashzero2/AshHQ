@@ -133,12 +133,17 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
             return (
               <div
                 key={date}
-                className={`group relative rounded-xl border transition-all cursor-pointer ${
+                role="button"
+                tabIndex={0}
+                aria-label={isToday ? "Today's journal entry" : `Journal entry for ${format(parseISO(date), "MMMM d, yyyy")}`}
+                aria-pressed={isSelected}
+                className={`group relative rounded-xl border transition-all cursor-pointer focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent ${
                   isSelected
                     ? "bg-surface border-outline-strong shadow-[0_0_0_1px_rgba(232,192,108,0.12)]"
                     : "bg-transparent border-transparent hover:bg-surface hover:border-outline"
                 }`}
                 onClick={() => setSelectedDate(date)}
+                onKeyDown={(e) => { if (e.key === "Enter" || e.key === " ") { e.preventDefault(); setSelectedDate(date); } }}
               >
                 <div className="px-3 py-2.5">
                   <div className="flex items-center gap-2 mb-0.5">
@@ -175,12 +180,14 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
                       <div className="flex items-center gap-1">
                         <button
                           onClick={(e) => { e.stopPropagation(); handleDelete(entry.id); }}
+                          aria-label="Confirm delete"
                           className="text-[10px] px-1.5 py-0.5 rounded bg-rose/20 text-rose hover:bg-rose/30 transition-colors"
                         >
                           Del
                         </button>
                         <button
                           onClick={(e) => { e.stopPropagation(); setConfirmDelete(null); }}
+                          aria-label="Cancel delete"
                           className="text-[10px] px-1.5 py-0.5 rounded bg-surface-raised text-muted-fg hover:text-foreground transition-colors"
                         >
                           ✕
@@ -189,7 +196,8 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
                     ) : (
                       <button
                         onClick={(e) => { e.stopPropagation(); setConfirmDelete(entry.id); }}
-                        className="p-1 rounded-lg text-subtle-fg hover:text-rose hover:bg-rose/10 transition-all"
+                        aria-label="Delete entry"
+                        className="p-1 rounded-lg text-subtle-fg hover:text-rose hover:bg-rose/10 transition-all focus-visible:opacity-100 focus-visible:outline-none focus-visible:ring-1 focus-visible:ring-rose"
                       >
                         <Trash2 size={11} />
                       </button>

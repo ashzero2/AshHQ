@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useState, useTransition, useEffect } from "react";
 import { createTask, updateTask } from "@/lib/services/tasks";
 import { TASK_CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
@@ -25,6 +25,12 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [dueDate, setDueDate] = useState(
     task?.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""
   );
+
+  useEffect(() => {
+    const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
+    document.addEventListener("keydown", handleKey);
+    return () => document.removeEventListener("keydown", handleKey);
+  }, [onClose]);
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -61,15 +67,21 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4">
+    <div
+      className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 backdrop-blur-sm p-4"
+      role="dialog"
+      aria-modal="true"
+      aria-labelledby="task-form-title"
+    >
       <div className="bg-surface border border-outline rounded-xl w-full max-w-md shadow-[0_8px_32px_rgba(0,0,0,0.6)] overflow-hidden">
         {/* Header */}
         <div className="flex items-center justify-between px-5 py-4 border-b border-outline">
-          <h2 className="text-sm font-semibold text-foreground">
+          <h2 id="task-form-title" className="text-sm font-semibold text-foreground">
             {task ? "Edit Task" : "New Task"}
           </h2>
           <button
             onClick={onClose}
+            aria-label="Close"
             className="text-muted-fg hover:text-foreground p-1.5 rounded-lg hover:bg-surface-raised transition-colors"
           >
             <X size={15} />
