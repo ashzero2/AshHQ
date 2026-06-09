@@ -1,10 +1,11 @@
 import { AppShell } from "@/components/layout/app-shell";
-import { getJournalEntries, todayDateStr } from "@/lib/services/journal";
+import { getJournalEntries } from "@/lib/services/journal";
+import { format } from "date-fns";
 import { JournalView } from "@/components/features/journal/journal-view";
 
 export default async function JournalPage() {
   const entries = await getJournalEntries(60);
-  const todayDate = todayDateStr();
+  const todayDate = format(new Date(), "yyyy-MM-dd");
   return (
     <AppShell>
       <div className="h-full flex flex-col min-h-0">

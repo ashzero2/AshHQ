@@ -30,6 +30,3 @@ export async function deleteJournalEntry(id: string) {
   revalidatePath("/journal");
 }
 
-export function todayDateStr() {
-  return format(new Date(), "yyyy-MM-dd");
-}
