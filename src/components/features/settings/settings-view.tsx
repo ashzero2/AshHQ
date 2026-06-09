@@ -1,7 +1,9 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useTheme } from "next-themes";
 import { updateSettings } from "@/lib/services/settings";
+import { testTelegramConnection } from "@/lib/services/telegram";
 import { changePin } from "@/lib/services/auth";
 import { toast } from "sonner";
 import { Download, Upload } from "lucide-react";
@@ -60,6 +62,7 @@ function ToggleGroup({ options, value, onChange }: {
 
 export function SettingsView({ settings }: SettingsViewProps) {
   const [isPending, startTransition] = useTransition();
+  const { theme, setTheme } = useTheme();
   const [aiProvider, setAiProvider] = useState(settings.aiProvider);
   const [openaiKey, setOpenaiKey] = useState(settings.openaiApiKey ?? "");
   const [openaiModel, setOpenaiModel] = useState(settings.openaiModel);
@@ -70,6 +73,12 @@ export function SettingsView({ settings }: SettingsViewProps) {
   const [weatherKey, setWeatherKey] = useState(settings.weatherApiKey ?? "");
   const [weatherCity, setWeatherCity] = useState(settings.weatherCity);
   const [tempUnit, setTempUnit] = useState(settings.temperatureUnit);
+  const [tgToken, setTgToken] = useState(settings.telegramBotToken ?? "");
+  const [tgChatId, setTgChatId] = useState(settings.telegramChatId ?? "");
+  const [tgEnabled, setTgEnabled] = useState(settings.telegramEnabled);
+  const [timezone, setTimezone] = useState(settings.timezone);
+  const [tgTestStatus, setTgTestStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
+  const [tgTestMessage, setTgTestMessage] = useState("");
   const [currentPin, setCurrentPin] = useState("");
   const [newPin, setNewPin] = useState("");
   const [weatherTestStatus, setWeatherTestStatus] = useState<"idle" | "testing" | "ok" | "error">("idle");
@@ -89,10 +98,24 @@ export function SettingsView({ settings }: SettingsViewProps) {
           weatherApiKey: weatherKey || null,
           weatherCity,
           temperatureUnit: tempUnit as "C" | "F",
+          telegramBotToken: tgToken || null,
+          telegramChatId: tgChatId || null,
+          telegramEnabled: tgEnabled,
+          timezone,
         });
         toast.success("Settings saved");
       } catch { toast.error("Failed to save settings"); }
     });
+  };
+
+  const handleTestTelegram = () => {
+    if (!tgToken || !tgChatId) return;
+    setTgTestStatus("testing");
+    setTgTestMessage("");
+    testTelegramConnection(tgToken, tgChatId).then(({ ok, error }) => {
+      if (ok) { setTgTestStatus("ok"); setTgTestMessage("Message sent!"); }
+      else { setTgTestStatus("error"); setTgTestMessage(error ?? "Failed"); }
+    }).catch(() => { setTgTestStatus("error"); setTgTestMessage("Network error"); });
   };
 
   const handleTestWeather = () => {
@@ -133,6 +156,30 @@ export function SettingsView({ settings }: SettingsViewProps) {
 
   return (
     <div>
+      <Section title="Appearance" description="Customize the look of your dashboard">
+        <Field label="Theme">
+          <ToggleGroup
+            options={[
+              { key: "dark", label: "Dark" },
+              { key: "light", label: "Light" },
+              { key: "system", label: "System" },
+            ]}
+            value={theme ?? "dark"}
+            onChange={setTheme}
+          />
+        </Field>
+        <Field label="Timezone">
+          <input
+            type="text"
+            value={timezone}
+            onChange={(e) => setTimezone(e.target.value)}
+            placeholder="e.g. Asia/Kolkata"
+            className={inputCls}
+          />
+          <p className="text-[11px] text-subtle-fg mt-1">Used for journal dates and Telegram notifications.</p>
+        </Field>
+      </Section>
+
       <Section title="AI Provider" description="Configure the AI model for chat and assistance">
         <Field label="Provider">
           <ToggleGroup
@@ -207,6 +254,47 @@ export function SettingsView({ settings }: SettingsViewProps) {
           {weatherTestStatus === "error" && (
             <span className="text-[12px] text-rose">{weatherTestMessage}</span>
           )}
+        </div>
+      </Section>
+
+      <Section title="Telegram" description="Get notified and query your data via Telegram bot">
+        <Field label="Bot Token">
+          <input
+            type="password"
+            value={tgToken}
+            onChange={(e) => { setTgToken(e.target.value); setTgTestStatus("idle"); }}
+            placeholder="Get from @BotFather on Telegram"
+            className={inputCls}
+          />
+        </Field>
+        <Field label="Chat ID">
+          <input
+            type="text"
+            value={tgChatId}
+            onChange={(e) => { setTgChatId(e.target.value); setTgTestStatus("idle"); }}
+            placeholder="Your Telegram user/chat ID"
+            className={inputCls}
+          />
+          <p className="text-[11px] text-subtle-fg mt-1">Message @userinfobot on Telegram to get your chat ID.</p>
+        </Field>
+        <Field label="Enable">
+          <ToggleGroup
+            options={[{ key: "true", label: "Enabled" }, { key: "false", label: "Disabled" }]}
+            value={tgEnabled ? "true" : "false"}
+            onChange={(v) => setTgEnabled(v === "true")}
+          />
+        </Field>
+        <div className="flex items-center gap-3 mt-1">
+          <button
+            type="button"
+            onClick={handleTestTelegram}
+            disabled={tgTestStatus === "testing" || !tgToken || !tgChatId}
+            className="px-3 py-1.5 rounded-lg bg-surface-raised border border-outline hover:border-outline-strong text-[12px] font-medium text-muted-fg hover:text-foreground disabled:text-subtle-fg disabled:cursor-not-allowed transition-colors"
+          >
+            {tgTestStatus === "testing" ? "Sending…" : "Test Connection"}
+          </button>
+          {tgTestStatus === "ok" && <span className="text-[12px] text-emerald">{tgTestMessage}</span>}
+          {tgTestStatus === "error" && <span className="text-[12px] text-rose">{tgTestMessage}</span>}
         </div>
       </Section>
 

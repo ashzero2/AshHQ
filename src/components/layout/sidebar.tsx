@@ -11,6 +11,7 @@ import {
   StickyNote,
   Link2,
   BookOpen,
+  BarChart2,
   Settings,
   X,
   LogOut,
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/notes", label: "Notes", icon: StickyNote },
   { href: "/links", label: "Links", icon: Link2 },
   { href: "/journal", label: "Journal", icon: BookOpen },
+  { href: "/analytics", label: "Analytics", icon: BarChart2 },
 ];
 
 export function Sidebar() {

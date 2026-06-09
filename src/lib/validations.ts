@@ -84,6 +84,10 @@ export const UpdateSettingsSchema = z.object({
   weatherCity: z.string().optional(),
   temperatureUnit: z.enum(["C", "F"]).optional(),
   theme: z.enum(["light", "dark", "system"]).optional(),
+  telegramBotToken: z.string().nullable().optional(),
+  telegramChatId: z.string().nullable().optional(),
+  telegramEnabled: z.boolean().optional(),
+  timezone: z.string().optional(),
 });
 
 export const PinSchema = z.object({

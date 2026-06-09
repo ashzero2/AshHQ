@@ -55,6 +55,38 @@ body {
   color: var(--color-foreground);
 }
 
+/* ─── Light theme ─────────────────────────── */
+.light {
+  --color-background: #f6f5f0;
+  --color-surface: #ffffff;
+  --color-surface-raised: #eeeee8;
+  --color-elevated: #e6e5df;
+  --color-outline: #deddd5;
+  --color-outline-strong: #c4c3b8;
+  --color-foreground: #18181e;
+  --color-muted-fg: #52527a;
+  --color-subtle-fg: #9898aa;
+  --color-accent: #b87830;
+  --color-accent-light: #c88840;
+  --color-emerald: #16a34a;
+  --color-rose: #dc2626;
+  --color-sky: #0284c7;
+  --color-amber-warm: #c2410c;
+}
+
+/* Light mode: date picker icon */
+.light input[type="date"]::-webkit-calendar-picker-indicator,
+.light input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.2);
+  opacity: 0.5;
+}
+
+/* Light mode: select arrow (dark stroke on light background) */
+.light select {
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%2352527a' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+}
+
+/* ─── Date/datetime input icons ──────────── */
 /* Date/datetime input icons */
 input[type="date"]::-webkit-calendar-picker-indicator,
 input[type="datetime-local"]::-webkit-calendar-picker-indicator {

@@ -15,8 +15,12 @@ model Settings {
   openaiModel     String   @default("gpt-4o-mini")
   ollamaBaseUrl   String   @default("http://localhost:11434")
   ollamaModel     String   @default("llama3.2")
-  geminiApiKey    String?
-  geminiModel     String   @default("gemini-2.5-flash")
+  geminiApiKey       String?
+  geminiModel        String   @default("gemini-2.5-flash")
+  telegramBotToken   String?
+  telegramChatId     String?
+  telegramEnabled    Boolean  @default(false)
+  timezone           String   @default("UTC")
   weatherApiKey   String?
   weatherCity     String   @default("Mumbai")
   temperatureUnit String   @default("C")
