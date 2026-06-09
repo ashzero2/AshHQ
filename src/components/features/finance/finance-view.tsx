@@ -160,7 +160,7 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
                 <div className="flex-1 bg-surface-raised rounded-full h-1.5 overflow-hidden">
                   <div
                     className="bg-rose h-1.5 rounded-full transition-all"
-                    style={{ width: `${Math.min(cat.percentage, 100)}%` }}
+                    style={{ width: `${Math.min(isFinite(cat.percentage) ? cat.percentage : 0, 100)}%` }}
                   />
                 </div>
                 <span className="text-[12px] text-muted-fg w-20 text-right tabular-nums">

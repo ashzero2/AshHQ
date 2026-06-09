@@ -1,7 +1,7 @@
 "use client";
 
 import React from "react";
-import { AlertCircle } from "lucide-react";
+import { AlertCircle, RefreshCw } from "lucide-react";
 
 interface ErrorBoundaryState {
   hasError: boolean;
@@ -30,6 +30,12 @@ export class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoun
         <div className="flex flex-col items-center justify-center h-full gap-2 text-center p-4">
           <AlertCircle size={18} className="text-rose opacity-60" />
           <p className="text-xs text-muted-fg">Widget failed to load</p>
+          <button
+            onClick={() => this.setState({ hasError: false })}
+            className="flex items-center gap-1 text-[11px] text-accent hover:text-accent-light transition-colors"
+          >
+            <RefreshCw size={10} /> Retry
+          </button>
         </div>
       );
     }

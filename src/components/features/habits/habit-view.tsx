@@ -13,7 +13,6 @@ interface HabitWithStreak {
   icon: string;
   color: string;
   frequency: string;
-  todayCompleted: boolean;
   currentStreak: number;
   longestStreak: number;
   logs: { date: string; completed: boolean }[];
@@ -68,6 +67,7 @@ export function HabitView({ habits }: HabitViewProps) {
   const [name, setName] = useState("");
   const [icon, setIcon] = useState("✅");
 
+  // Compute today in the client's local timezone to avoid UTC server mismatch
   const today = format(new Date(), "yyyy-MM-dd");
 
   const handleCreate = (e: React.FormEvent) => {
@@ -95,7 +95,9 @@ export function HabitView({ habits }: HabitViewProps) {
     });
   };
 
-  const completedToday = habits.filter((h) => h.todayCompleted).length;
+  const completedToday = habits.filter((h) =>
+    h.logs.some((l) => l.date === today && l.completed)
+  ).length;
 
   const inputCls =
     "bg-surface-raised border border-outline rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/60 transition-colors";
@@ -172,13 +174,15 @@ export function HabitView({ habits }: HabitViewProps) {
         </div>
       ) : (
         <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
-          {habits.map((habit) => (
+          {habits.map((habit) => {
+            const doneToday = habit.logs.some((l) => l.date === today && l.completed);
+            return (
             <div
               key={habit.id}
               className={cn(
                 "group p-4 rounded-xl border transition-all",
                 isPending && "opacity-60 pointer-events-none",
-                habit.todayCompleted
+                doneToday
                   ? "border-emerald/25 bg-emerald/5"
                   : "border-outline bg-surface hover:border-outline-strong"
               )}
@@ -189,7 +193,7 @@ export function HabitView({ habits }: HabitViewProps) {
                   onClick={() => handleToggle(habit.id)}
                   className={cn(
                     "w-11 h-11 rounded-xl flex items-center justify-center text-xl flex-shrink-0 transition-all",
-                    habit.todayCompleted
+                    doneToday
                       ? "bg-emerald/15 ring-1 ring-emerald/40"
                       : "bg-surface-raised hover:bg-elevated border border-outline"
                   )}
@@ -199,7 +203,7 @@ export function HabitView({ habits }: HabitViewProps) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex items-start justify-between gap-2">
-                    <p className={cn("font-semibold text-sm", habit.todayCompleted ? "text-emerald" : "text-foreground")}>
+                    <p className={cn("font-semibold text-sm", doneToday ? "text-emerald" : "text-foreground")}>
                       {habit.name}
                     </p>
                     <button
@@ -225,7 +229,8 @@ export function HabitView({ habits }: HabitViewProps) {
               {/* 7-day week strip */}
               <WeekStrip logs={habit.logs} />
             </div>
-          ))}
+            );
+          })}
         </div>
       )}
     </div>

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useTransition } from "react";
+import { useState, useEffect, useRef, useTransition } from "react";
 import { createFocusSession } from "@/lib/services/pomodoro";
 import { Play, Pause, RotateCcw, Coffee } from "lucide-react";
 
@@ -28,49 +28,64 @@ export function PomodoroWidget() {
   const [running, setRunning] = useState(false);
   const [sessions, setSessions] = useState(0);
   const [, startTransition] = useTransition();
+  // endAt tracks the absolute timestamp when the current countdown finishes
+  const endAtRef = useRef<number | null>(null);
 
   const total = DURATIONS[mode];
   const pct = ((total - timeLeft) / total) * 100;
   const mins = Math.floor(timeLeft / 60);
   const secs = timeLeft % 60;
 
-  const switchMode = useCallback((m: Mode) => {
+  const switchMode = (m: Mode) => {
+    endAtRef.current = null;
     setMode(m);
     setTimeLeft(DURATIONS[m]);
     setRunning(false);
-  }, []);
+  };
 
-  const reset = useCallback(() => {
-    setTimeLeft(DURATIONS[mode]);
+  const reset = () => {
+    endAtRef.current = null;
     setRunning(false);
-  }, [mode]);
+    setTimeLeft(DURATIONS[mode]);
+  };
+
+  const toggleRunning = () => {
+    if (running) {
+      endAtRef.current = null;
+      setRunning(false);
+    } else {
+      endAtRef.current = Date.now() + timeLeft * 1000;
+      setRunning(true);
+    }
+  };
 
   useEffect(() => {
     if (!running) return;
+
     const interval = setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          clearInterval(interval);
-          setRunning(false);
-          if (mode === "WORK") {
-            setSessions((s) => s + 1);
-            startTransition(async () => {
-              await createFocusSession({ duration: Math.round(DURATIONS.WORK / 60), type: "WORK" });
-            });
-          }
-          return 0;
+      if (endAtRef.current === null) return;
+      const remaining = Math.ceil((endAtRef.current - Date.now()) / 1000);
+      if (remaining <= 0) {
+        setTimeLeft(0);
+        setRunning(false);
+        endAtRef.current = null;
+        if (mode === "WORK") {
+          setSessions((s) => s + 1);
+          startTransition(async () => {
+            await createFocusSession({ duration: Math.round(DURATIONS.WORK / 60), type: "WORK" });
+          });
         }
-        return t - 1;
-      });
-    }, 1000);
+      } else {
+        setTimeLeft(remaining);
+      }
+    }, 500);
+
     return () => clearInterval(interval);
   }, [running, mode]);
 
-  // SVG circle ring
   const r = 38;
   const circumference = 2 * Math.PI * r;
   const dashOffset = circumference - (pct / 100) * circumference;
-
   const ringColor = mode === "WORK" ? "#e8c06c" : mode === "SHORT_BREAK" ? "#4ade80" : "#7dd3fc";
 
   return (
@@ -105,7 +120,7 @@ export function PomodoroWidget() {
             strokeLinecap="round"
             strokeDasharray={circumference}
             strokeDashoffset={dashOffset}
-            className="transition-all duration-1000 ease-linear"
+            className="transition-all duration-500 ease-linear"
           />
         </svg>
         <div className="absolute inset-0 flex flex-col items-center justify-center">
@@ -125,7 +140,7 @@ export function PomodoroWidget() {
           <RotateCcw size={13} />
         </button>
         <button
-          onClick={() => setRunning((r) => !r)}
+          onClick={toggleRunning}
           className="flex items-center gap-1.5 px-4 py-1.5 rounded-lg text-[12px] font-semibold text-background transition-all hover:opacity-90"
           style={{ background: ringColor }}
         >
