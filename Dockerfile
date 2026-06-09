@@ -4,6 +4,9 @@ RUN apk add --no-cache libc6-compat
 # ── deps ──────────────────────────────────────────────
 FROM base AS deps
 WORKDIR /app
+# Force include devDependencies (tailwind, postcss) needed at build time.
+# ENV overrides any ARG NODE_ENV=production injected by the CI/CD host.
+ENV NODE_ENV=development
 COPY package.json package-lock.json ./
 COPY prisma ./prisma
 RUN npm ci --ignore-scripts
