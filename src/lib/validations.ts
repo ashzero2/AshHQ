@@ -14,19 +14,21 @@ export const UpdateTaskSchema = CreateTaskSchema.partial().extend({
   completedAt: z.coerce.date().nullable().optional(),
 });
 
-export const CreateEventSchema = z.object({
+const EventBaseSchema = z.object({
   title: z.string().min(1).max(200),
   description: z.string().max(2000).nullable().optional(),
   startTime: z.coerce.date(),
   endTime: z.coerce.date(),
   color: z.string().optional().default("#3b82f6"),
   allDay: z.boolean().optional().default(false),
-}).refine((d) => d.endTime > d.startTime, {
+});
+
+export const CreateEventSchema = EventBaseSchema.refine((d) => d.endTime > d.startTime, {
   message: "End time must be after start time",
   path: ["endTime"],
 });
 
-export const UpdateEventSchema = CreateEventSchema.partial().extend({
+export const UpdateEventSchema = EventBaseSchema.partial().extend({
   id: z.string(),
 });
 
