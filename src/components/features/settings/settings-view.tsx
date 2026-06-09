@@ -4,6 +4,7 @@ import { useState, useTransition } from "react";
 import { updateSettings } from "@/lib/services/settings";
 import { changePin } from "@/lib/services/auth";
 import { toast } from "sonner";
+import { Download, Upload } from "lucide-react";
 import type { Settings } from "@prisma/client";
 
 interface SettingsViewProps { settings: Settings; }
@@ -216,6 +217,39 @@ export function SettingsView({ settings }: SettingsViewProps) {
       >
         {isPending ? "Saving…" : "Save Settings"}
       </button>
+
+      <Section title="Data Management" description="Export your data or import a backup">
+        <div className="flex gap-3">
+          <a
+            href="/api/export"
+            download
+            className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-raised border border-outline hover:border-outline-strong text-[12px] font-medium text-muted-fg hover:text-foreground transition-colors"
+          >
+            <Download size={13} /> Export backup
+          </a>
+          <label className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-raised border border-outline hover:border-outline-strong text-[12px] font-medium text-muted-fg hover:text-foreground transition-colors cursor-pointer">
+            <Upload size={13} /> Import backup
+            <input
+              type="file"
+              accept=".json"
+              className="hidden"
+              onChange={async (e) => {
+                const file = e.target.files?.[0];
+                if (!file) return;
+                try {
+                  const text = await file.text();
+                  JSON.parse(text); // validate JSON
+                  toast.info("Import coming soon — export works now!");
+                } catch {
+                  toast.error("Invalid JSON file");
+                }
+                e.target.value = "";
+              }}
+            />
+          </label>
+        </div>
+        <p className="text-[11px] text-subtle-fg mt-2">Backup includes tasks, events, habits, notes, finance, and journal entries.</p>
+      </Section>
 
       <Section title="Change PIN" description="Update your dashboard access PIN">
         <Field label="Current PIN">

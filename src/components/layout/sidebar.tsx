@@ -10,6 +10,7 @@ import {
   Target,
   StickyNote,
   Link2,
+  BookOpen,
   Settings,
   X,
   LogOut,
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/habits", label: "Habits", icon: Target },
   { href: "/notes", label: "Notes", icon: StickyNote },
   { href: "/links", label: "Links", icon: Link2 },
+  { href: "/journal", label: "Journal", icon: BookOpen },
 ];
 
 export function Sidebar() {

@@ -12,6 +12,7 @@ import { HabitsWidget } from "@/components/widgets/habits-widget";
 import { FinanceWidget } from "@/components/widgets/finance-widget";
 import { NotesWidget } from "@/components/widgets/notes-widget";
 import { QuickLinksWidget } from "@/components/widgets/quick-links-widget";
+import { PomodoroWidget } from "@/components/widgets/pomodoro-widget";
 
 function W({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
@@ -59,9 +60,12 @@ export default function DashboardPage() {
           <W title="Notes"><NotesWidget /></W>
         </div>
 
-        {/* Row 4: Quick Links (full width) */}
-        <div className="lg:col-span-12 md:col-span-2 row-span-1">
+        {/* Row 4: Quick Links + Pomodoro */}
+        <div className="lg:col-span-8 md:col-span-1 row-span-1">
           <W title="Quick Links"><QuickLinksWidget /></W>
+        </div>
+        <div className="lg:col-span-4 md:col-span-1 row-span-1">
+          <W title="Pomodoro"><PomodoroWidget /></W>
         </div>
       </div>
     </AppShell>

@@ -127,6 +127,28 @@ model QuickLink {
   @@index([sortOrder])
 }
 
+model JournalEntry {
+  id        String   @id @default(cuid())
+  date      String   @unique
+  content   String   @default("")
+  mood      String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([date])
+}
+
+model FocusSession {
+  id          String   @id @default(cuid())
+  taskId      String?
+  duration    Int
+  type        String   @default("WORK")
+  completedAt DateTime @default(now())
+  createdAt   DateTime @default(now())
+
+  @@index([completedAt])
+}
+
 model Session {
   id        String   @id @default(cuid())
   token     String   @unique

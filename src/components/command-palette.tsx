@@ -16,6 +16,7 @@ import {
   Sun,
   LogOut,
   Link2,
+  BookOpen,
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { logout } from "@/lib/services/auth";
@@ -85,6 +86,9 @@ export function CommandPalette() {
                 </Command.Item>
                 <Command.Item onSelect={() => navigate("/links")} className={itemCls}>
                   <Link2 size={16} /> Links
+                </Command.Item>
+                <Command.Item onSelect={() => navigate("/journal")} className={itemCls}>
+                  <BookOpen size={16} /> Journal
                 </Command.Item>
                 <Command.Item onSelect={() => navigate("/settings")} className={itemCls}>
                   <Settings size={16} /> Settings
