@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { AppShell } from "@/components/layout/app-shell";
 import { WidgetWrapper } from "@/components/dashboard/widget-wrapper";

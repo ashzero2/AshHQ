@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getTransactions, getFinanceSummary } from "@/lib/services/finance";
 import { FinanceView } from "@/components/features/finance/finance-view";

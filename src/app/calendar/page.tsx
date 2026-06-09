@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getUpcomingEvents } from "@/lib/services/calendar";
 import { CalendarEvents } from "@/components/features/calendar/calendar-events";

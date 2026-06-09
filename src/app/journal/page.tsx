@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getJournalEntries } from "@/lib/services/journal";
 import { format } from "date-fns";

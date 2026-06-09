@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getLinks } from "@/lib/services/links";
 import { LinksView } from "@/components/features/links/links-view";

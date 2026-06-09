@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getHabits } from "@/lib/services/habits";
 import { HabitView } from "@/components/features/habits/habit-view";

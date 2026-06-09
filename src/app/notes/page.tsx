@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getNotes } from "@/lib/services/notes";
 import { NotesView } from "@/components/features/notes/notes-view";

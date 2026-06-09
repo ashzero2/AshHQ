@@ -1,3 +1,4 @@
+export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { TaskList } from "@/components/features/tasks/task-list";
 import { getTasks } from "@/lib/services/tasks";
