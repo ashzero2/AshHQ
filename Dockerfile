@@ -17,6 +17,12 @@ COPY . .
 RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
+# Bundle seed.ts to plain JS so the runner stage doesn't need tsx/typescript
+RUN node_modules/.bin/esbuild prisma/seed.ts \
+    --bundle --platform=node --target=node20 \
+    --outfile=prisma/seed.js \
+    --external:@prisma/client \
+    --log-level=warning
 
 # ── runner ────────────────────────────────────────────
 FROM base AS runner
@@ -34,8 +40,8 @@ COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-COPY --from=builder /app/node_modules/tsx ./node_modules/tsx
-COPY --from=builder /app/node_modules/typescript ./node_modules/typescript
+# prisma CLI needed for db push at startup
+COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 RUN mkdir -p /data && chown -R nextjs:nodejs /data
 
@@ -48,6 +54,6 @@ ENV HOSTNAME="0.0.0.0"
 # On every start: sync DB schema.
 # On FIRST start only (.seeded flag in persistent volume): seed default data.
 CMD ["sh", "-c", "\
-  npx prisma db push --skip-generate && \
-  ([ -f /data/.seeded ] || (npx prisma db seed && touch /data/.seeded)) && \
+  node node_modules/prisma/build/index.js db push --skip-generate && \
+  ([ -f /data/.seeded ] || (node prisma/seed.js && touch /data/.seeded)) && \
   node server.js"]
