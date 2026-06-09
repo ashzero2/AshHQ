@@ -30,7 +30,7 @@ async function main() {
 
   await prisma.settings.upsert({
     where: { id: "singleton" },
-    update: { pin: hashedPin },
+    update: {},
     create: {
       id: "singleton",
       pin: hashedPin,
