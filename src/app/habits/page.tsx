@@ -6,8 +6,11 @@ export default async function HabitsPage() {
   const habits = await getHabits();
   return (
     <AppShell>
-      <div className="max-w-3xl">
-        <h1 className="text-2xl font-bold mb-6">Habits</h1>
+      <div className="h-full flex flex-col">
+        <div className="mb-6 flex-shrink-0">
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Habits</h1>
+          <p className="text-sm text-muted-fg mt-0.5">Build and track your daily routines</p>
+        </div>
         <HabitView habits={habits} />
       </div>
     </AppShell>

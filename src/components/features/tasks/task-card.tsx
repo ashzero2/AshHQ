@@ -8,18 +8,11 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import type { Task } from "@prisma/client";
 
-const priorityColors: Record<string, string> = {
-  LOW: "text-zinc-500",
-  MEDIUM: "text-blue-400",
-  HIGH: "text-orange-400",
-  URGENT: "text-red-400",
-};
-
-const priorityBg: Record<string, string> = {
-  LOW: "bg-zinc-500/10",
-  MEDIUM: "bg-blue-500/10",
-  HIGH: "bg-orange-500/10",
-  URGENT: "bg-red-500/10",
+const priorityStyles: Record<string, { dot: string; badge: string }> = {
+  LOW: { dot: "bg-subtle-fg", badge: "text-muted-fg bg-surface-raised" },
+  MEDIUM: { dot: "bg-sky", badge: "text-sky bg-sky/10" },
+  HIGH: { dot: "bg-amber-warm", badge: "text-amber-warm bg-amber-warm/10" },
+  URGENT: { dot: "bg-rose", badge: "text-rose bg-rose/10" },
 };
 
 interface TaskCardProps {
@@ -33,10 +26,7 @@ export function TaskCard({ task, onEdit }: TaskCardProps) {
 
   const handleToggle = () => {
     startTransition(async () => {
-      await updateTask({
-        id: task.id,
-        status: isDone ? "TODO" : "DONE",
-      });
+      await updateTask({ id: task.id, status: isDone ? "TODO" : "DONE" });
     });
   };
 
@@ -48,88 +38,58 @@ export function TaskCard({ task, onEdit }: TaskCardProps) {
     });
   };
 
-  const isOverdue =
-    task.dueDate && new Date(task.dueDate) < new Date() && !isDone;
+  const isOverdue = task.dueDate && new Date(task.dueDate) < new Date() && !isDone;
+  const styles = priorityStyles[task.priority] ?? priorityStyles.MEDIUM;
 
   return (
     <div
       onClick={() => onEdit(task)}
       className={cn(
-        "group flex items-start gap-3 p-3 rounded-lg border border-zinc-800 hover:border-zinc-700 bg-zinc-900/50 hover:bg-zinc-800/50 cursor-pointer transition-all",
-        isPending && "opacity-50 pointer-events-none"
+        "group flex items-start gap-3 p-3.5 rounded-xl border bg-surface cursor-pointer transition-all",
+        "hover:border-outline-strong hover:bg-surface-raised",
+        isDone ? "border-outline/40 opacity-60" : "border-outline",
+        isPending && "opacity-40 pointer-events-none"
       )}
     >
       {/* Checkbox */}
       <button
-        onClick={(e) => {
-          e.stopPropagation();
-          handleToggle();
-        }}
+        onClick={(e) => { e.stopPropagation(); handleToggle(); }}
         className={cn(
           "flex-shrink-0 w-5 h-5 mt-0.5 rounded-md border-2 flex items-center justify-center transition-all",
           isDone
-            ? "bg-green-500 border-green-500"
-            : "border-zinc-600 hover:border-blue-500"
+            ? "bg-emerald border-emerald"
+            : "border-outline-strong hover:border-accent"
         )}
       >
-        {isDone && <Check size={12} className="text-white" />}
+        {isDone && <Check size={11} className="text-background" />}
       </button>
 
       {/* Content */}
       <div className="flex-1 min-w-0">
-        <p
-          className={cn(
-            "text-sm font-medium truncate",
-            isDone && "line-through text-zinc-500"
-          )}
-        >
+        <p className={cn("text-sm font-medium truncate", isDone ? "line-through text-muted-fg" : "text-foreground")}>
           {task.title}
         </p>
-
-        <div className="flex items-center gap-2 mt-1 flex-wrap">
-          {/* Priority badge */}
-          <span
-            className={cn(
-              "text-xs px-1.5 py-0.5 rounded",
-              priorityColors[task.priority],
-              priorityBg[task.priority]
-            )}
-          >
+        <div className="flex items-center gap-2 mt-1.5 flex-wrap">
+          <span className={cn("text-[10px] px-1.5 py-0.5 rounded font-medium", styles.badge)}>
             {task.priority.toLowerCase()}
           </span>
-
-          {/* Category */}
           {task.category && (
-            <span className="text-xs text-zinc-500">{task.category}</span>
+            <span className="text-[11px] text-subtle-fg">{task.category}</span>
           )}
-
-          {/* Due date */}
           {task.dueDate && (
-            <span
-              className={cn(
-                "text-xs flex items-center gap-1",
-                isOverdue ? "text-red-400" : "text-zinc-500"
-              )}
-            >
-              {isOverdue ? (
-                <AlertTriangle size={10} />
-              ) : (
-                <Clock size={10} />
-              )}
-              {formatDistanceToNow(new Date(task.dueDate), {
-                addSuffix: true,
-              })}
+            <span className={cn("text-[11px] flex items-center gap-1", isOverdue ? "text-rose" : "text-muted-fg")}>
+              {isOverdue ? <AlertTriangle size={10} /> : <Clock size={10} />}
+              {formatDistanceToNow(new Date(task.dueDate), { addSuffix: true })}
             </span>
           )}
         </div>
       </div>
 
-      {/* Delete */}
       <button
         onClick={handleDelete}
-        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 transition-all p-1"
+        className="flex-shrink-0 opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-rose p-1.5 rounded-lg hover:bg-rose/10 transition-all"
       >
-        <Trash2 size={14} />
+        <Trash2 size={13} />
       </button>
     </div>
   );

@@ -9,7 +9,6 @@ import { HabitsWidget } from "@/components/widgets/habits-widget";
 import { FinanceWidget } from "@/components/widgets/finance-widget";
 import { NotesWidget } from "@/components/widgets/notes-widget";
 import { QuickLinksWidget } from "@/components/widgets/quick-links-widget";
-import { AiChatWidget } from "@/components/widgets/ai-chat-widget";
 
 export default function DashboardPage() {
   return (
@@ -61,15 +60,10 @@ export default function DashboardPage() {
           </WidgetWrapper>
         </div>
 
-        {/* Row 4: Quick Links + AI Chat */}
-        <div className="lg:col-span-6 md:col-span-1 row-span-1">
+        {/* Row 4: Quick Links (full width) */}
+        <div className="lg:col-span-12 md:col-span-2 row-span-1">
           <WidgetWrapper title="Quick Links">
             <QuickLinksWidget />
-          </WidgetWrapper>
-        </div>
-        <div className="lg:col-span-6 md:col-span-1 row-span-1">
-          <WidgetWrapper title="AI Chat">
-            <AiChatWidget />
           </WidgetWrapper>
         </div>
       </div>

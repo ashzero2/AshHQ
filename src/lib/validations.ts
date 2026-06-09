@@ -21,6 +21,9 @@ export const CreateEventSchema = z.object({
   endTime: z.coerce.date(),
   color: z.string().optional().default("#3b82f6"),
   allDay: z.boolean().optional().default(false),
+}).refine((d) => d.endTime > d.startTime, {
+  message: "End time must be after start time",
+  path: ["endTime"],
 });
 
 export const UpdateEventSchema = CreateEventSchema.partial().extend({
@@ -68,11 +71,13 @@ export const CreateQuickLinkSchema = z.object({
 });
 
 export const UpdateSettingsSchema = z.object({
-  aiProvider: z.enum(["OPENAI", "OLLAMA"]).optional(),
+  aiProvider: z.enum(["OPENAI", "OLLAMA", "GEMINI"]).optional(),
   openaiApiKey: z.string().nullable().optional(),
   openaiModel: z.string().optional(),
   ollamaBaseUrl: z.string().optional(),
   ollamaModel: z.string().optional(),
+  geminiApiKey: z.string().nullable().optional(),
+  geminiModel: z.string().optional(),
   weatherApiKey: z.string().nullable().optional(),
   weatherCity: z.string().optional(),
   temperatureUnit: z.enum(["C", "F"]).optional(),

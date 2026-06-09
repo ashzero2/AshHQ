@@ -6,9 +6,14 @@ export default async function SettingsPage() {
   const settings = await getSettings();
   return (
     <AppShell>
-      <div className="max-w-2xl">
-        <h1 className="text-2xl font-bold mb-6">Settings</h1>
-        <SettingsView settings={settings} />
+      <div className="h-full flex flex-col">
+        <div className="mb-6 flex-shrink-0">
+          <h1 className="text-xl font-bold text-foreground tracking-tight">Settings</h1>
+          <p className="text-sm text-muted-fg mt-0.5">Configure your command center</p>
+        </div>
+        <div className="max-w-xl">
+          <SettingsView settings={settings} />
+        </div>
       </div>
     </AppShell>
   );

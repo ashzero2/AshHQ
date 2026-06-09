@@ -1,7 +1,6 @@
 import { type ClassValue, clsx } from "clsx";
 import { twMerge } from "tailwind-merge";
 import { format, formatDistanceToNow } from "date-fns";
-import { createHash } from "crypto";
 
 export function cn(...inputs: ClassValue[]) {
   return twMerge(clsx(inputs));
@@ -22,10 +21,6 @@ export function formatDate(date: Date, fmt = "PPP"): string {
 
 export function formatRelativeTime(date: Date): string {
   return formatDistanceToNow(date, { addSuffix: true });
-}
-
-export function hashPin(pin: string): string {
-  return createHash("sha256").update(pin).digest("hex");
 }
 
 export function getGreeting(): string {

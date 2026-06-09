@@ -1,5 +1,5 @@
 import { getNotes } from "@/lib/services/notes";
-import { StickyNote } from "lucide-react";
+import { StickyNote, Pin } from "lucide-react";
 import Link from "next/link";
 
 export async function NotesWidget() {
@@ -9,27 +9,37 @@ export async function NotesWidget() {
 
   if (notes.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-        <StickyNote size={24} className="mb-2" />
-        <p className="text-sm">No notes yet</p>
-        <Link href="/notes" className="text-blue-400 text-xs mt-1 hover:underline">
-          Create a note
-        </Link>
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-subtle-fg">
+        <div className="w-10 h-10 rounded-xl bg-surface-raised border border-outline flex items-center justify-center">
+          <StickyNote size={17} className="text-muted-fg" />
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-muted-fg">No notes yet</p>
+          <Link href="/notes" className="text-[11px] text-accent hover:text-accent-light transition-colors mt-0.5 block">
+            Create a note
+          </Link>
+        </div>
       </div>
     );
   }
 
   return (
     <div className="flex flex-col h-full">
-      <div className="space-y-2 flex-1">
+      <div className="space-y-2 flex-1 min-h-0 overflow-hidden">
         {recent.map((note) => (
-          <div key={note.id} className="p-2 bg-zinc-800/50 rounded-lg">
-            <p className="text-sm font-medium truncate">{note.title}</p>
-            <p className="text-xs text-zinc-500 line-clamp-1">{note.content || "Empty"}</p>
+          <div key={note.id} className="p-2.5 bg-surface-raised rounded-lg border border-outline/50">
+            <div className="flex items-center gap-1.5 mb-0.5">
+              {note.pinned && <Pin size={9} className="text-accent flex-shrink-0" />}
+              <p className="text-[13px] font-medium text-foreground truncate">{note.title}</p>
+            </div>
+            <p className="text-[11px] text-muted-fg line-clamp-1">{note.content || "Empty"}</p>
           </div>
         ))}
       </div>
-      <Link href="/notes" className="text-xs text-blue-400 hover:text-blue-300 mt-2 pt-2 border-t border-zinc-800">
+      <Link
+        href="/notes"
+        className="text-[11px] text-accent hover:text-accent-light transition-colors mt-2 pt-2 border-t border-outline/60"
+      >
         View all notes →
       </Link>
     </div>

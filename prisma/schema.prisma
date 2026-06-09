@@ -15,6 +15,8 @@ model Settings {
   openaiModel     String   @default("gpt-4o-mini")
   ollamaBaseUrl   String   @default("http://localhost:11434")
   ollamaModel     String   @default("llama3.2")
+  geminiApiKey    String?
+  geminiModel     String   @default("gemini-2.5-flash")
   weatherApiKey   String?
   weatherCity     String   @default("Mumbai")
   temperatureUnit String   @default("C")
@@ -123,6 +125,15 @@ model QuickLink {
   createdAt DateTime @default(now())
 
   @@index([sortOrder])
+}
+
+model Session {
+  id        String   @id @default(cuid())
+  token     String   @unique
+  expiresAt DateTime
+  createdAt DateTime @default(now())
+
+  @@index([token])
 }
 
 model ChatConversation {

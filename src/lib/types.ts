@@ -32,6 +32,7 @@ export enum WidgetType {
 export enum AIProvider {
   OPENAI = "OPENAI",
   OLLAMA = "OLLAMA",
+  GEMINI = "GEMINI",
 }
 
 export interface WidgetConfig {

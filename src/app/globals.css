@@ -1,9 +1,22 @@
 @import "tailwindcss";
 
 @theme inline {
-  --color-background: #09090b;
-  --color-foreground: #fafafa;
-  --font-sans: var(--font-geist-sans);
+  --color-background: #0b0b0f;
+  --color-surface: #111117;
+  --color-surface-raised: #18181f;
+  --color-elevated: #1e1e27;
+  --color-outline: #252535;
+  --color-outline-strong: #33334a;
+  --color-foreground: #f0f0f8;
+  --color-muted-fg: #8a8aaa;
+  --color-subtle-fg: #4a4a68;
+  --color-accent: #e8c06c;
+  --color-accent-light: #f5d490;
+  --color-emerald: #4ade80;
+  --color-rose: #f87171;
+  --color-sky: #7dd3fc;
+  --color-amber-warm: #fb923c;
+  --font-sans: var(--font-jakarta);
   --font-mono: var(--font-geist-mono);
 }
 
@@ -12,8 +25,49 @@ body {
   background: var(--color-background);
   color: var(--color-foreground);
   font-family: var(--font-sans), system-ui, sans-serif;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
 }
 
 * {
-  border-color: theme(colors.zinc.800);
+  border-color: var(--color-outline);
+}
+
+/* Refined scrollbar */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: transparent;
+}
+::-webkit-scrollbar-thumb {
+  background: var(--color-outline-strong);
+  border-radius: 999px;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-muted-fg);
+}
+
+/* Text selection */
+::selection {
+  background: color-mix(in srgb, var(--color-accent) 20%, transparent);
+  color: var(--color-foreground);
+}
+
+/* Date/datetime input icons */
+input[type="date"]::-webkit-calendar-picker-indicator,
+input[type="datetime-local"]::-webkit-calendar-picker-indicator {
+  filter: invert(0.5);
+  opacity: 0.4;
+  cursor: pointer;
+}
+
+/* Select arrow */
+select {
+  appearance: none;
+  background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='12' height='12' viewBox='0 0 24 24' fill='none' stroke='%234a4a68' stroke-width='2'%3E%3Cpath d='m6 9 6 6 6-6'/%3E%3C/svg%3E");
+  background-repeat: no-repeat;
+  background-position: right 10px center;
+  padding-right: 28px !important;
 }

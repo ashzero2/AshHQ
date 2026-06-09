@@ -1,8 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Bot, User, Sparkles } from "lucide-react";
-import Link from "next/link";
+import { Send, Sparkles } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -46,61 +45,65 @@ export function AiChatWidget() {
       while (true) {
         const { done, value } = await reader.read();
         if (done) break;
-        const chunk = decoder.decode(value, { stream: true });
-        assistantContent += chunk;
+        assistantContent += decoder.decode(value, { stream: true });
         setMessages([...newMessages, { role: "assistant", content: assistantContent }]);
       }
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Sorry, I couldn't process that. Check your AI settings." }]);
+      setMessages([
+        ...newMessages,
+        { role: "assistant", content: "Couldn't connect. Check your AI settings." },
+      ]);
     } finally {
       setIsLoading(false);
     }
   };
 
-  if (messages.length === 0) {
-    return (
-      <div className="flex flex-col h-full">
-        <div className="flex-1 flex flex-col items-center justify-center text-zinc-500">
-          <Sparkles size={20} className="mb-2 text-blue-400" />
-          <p className="text-xs">Ask me anything</p>
-        </div>
-        <form onSubmit={handleSubmit} className="flex gap-2">
-          <input
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-            placeholder="Type a message..."
-            className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500"
-          />
-          <button type="submit" disabled={!input.trim()} className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 transition-colors">
-            <Send size={12} />
-          </button>
-        </form>
-      </div>
-    );
-  }
-
   return (
     <div className="flex flex-col h-full">
-      <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 mb-2 min-h-0">
-        {messages.map((msg, i) => (
-          <div key={i} className={`flex gap-2 text-xs ${msg.role === "user" ? "justify-end" : ""}`}>
-            {msg.role === "assistant" && <Bot size={14} className="text-blue-400 mt-0.5 shrink-0" />}
-            <p className={`rounded-lg px-2 py-1 max-w-[85%] ${msg.role === "user" ? "bg-blue-600/20 text-blue-200" : "bg-zinc-800 text-zinc-300"}`}>
-              {msg.content || (isLoading ? "..." : "")}
-            </p>
-            {msg.role === "user" && <User size={14} className="text-zinc-400 mt-0.5 shrink-0" />}
-          </div>
-        ))}
-      </div>
-      <form onSubmit={handleSubmit} className="flex gap-2">
+      {messages.length === 0 ? (
+        <div className="flex-1 flex flex-col items-center justify-center gap-2">
+          <Sparkles size={18} className="text-accent" />
+          <p className="text-[12px] text-muted-fg">Ask me anything</p>
+        </div>
+      ) : (
+        <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 mb-2 min-h-0 pr-0.5">
+          {messages.map((msg, i) => (
+            <div
+              key={i}
+              className={`flex gap-2 text-[12px] ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+            >
+              <p
+                className={`rounded-lg px-2.5 py-1.5 max-w-[88%] leading-relaxed ${
+                  msg.role === "user"
+                    ? "bg-accent/15 text-accent-light"
+                    : "bg-surface-raised text-muted-fg"
+                }`}
+              >
+                {msg.content || (isLoading && msg.role === "assistant" ? (
+                  <span className="inline-flex gap-1">
+                    <span className="w-1 h-1 rounded-full bg-muted-fg animate-bounce" style={{ animationDelay: "0ms" }} />
+                    <span className="w-1 h-1 rounded-full bg-muted-fg animate-bounce" style={{ animationDelay: "150ms" }} />
+                    <span className="w-1 h-1 rounded-full bg-muted-fg animate-bounce" style={{ animationDelay: "300ms" }} />
+                  </span>
+                ) : "")}
+              </p>
+            </div>
+          ))}
+        </div>
+      )}
+      <form onSubmit={handleSubmit} className="flex gap-2 flex-shrink-0">
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
           placeholder="Type a message..."
-          className="flex-1 bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-1.5 text-xs focus:outline-none focus:border-blue-500"
+          className="flex-1 bg-surface-raised border border-outline rounded-lg px-3 py-1.5 text-[12px] text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/50 transition-colors"
         />
-        <button type="submit" disabled={!input.trim() || isLoading} className="p-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 transition-colors">
-          <Send size={12} />
+        <button
+          type="submit"
+          disabled={!input.trim() || isLoading}
+          className="p-1.5 rounded-lg bg-accent text-background disabled:bg-surface-raised disabled:text-subtle-fg transition-all hover:bg-accent-light"
+        >
+          <Send size={13} />
         </button>
       </form>
     </div>

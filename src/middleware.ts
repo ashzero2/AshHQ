@@ -5,16 +5,25 @@ export function middleware(request: NextRequest) {
   const session = request.cookies.get("ashhq-session");
   const { pathname } = request.nextUrl;
 
-  // Allow these paths without auth
-  const publicPaths = ["/login", "/api", "/_next", "/icons", "/favicon.ico"];
+  const publicPaths = [
+    "/login",
+    "/_next",
+    "/icons",
+    "/favicon.ico",
+    "/manifest.json",
+    "/sw.js",
+    "/api/health",
+  ];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
   if (isPublic) {
     return NextResponse.next();
   }
 
-  // No session cookie → redirect to login
   if (!session?.value) {
+    if (pathname.startsWith("/api/")) {
+      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
+    }
     const loginUrl = new URL("/login", request.url);
     return NextResponse.redirect(loginUrl);
   }

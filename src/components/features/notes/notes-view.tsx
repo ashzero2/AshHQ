@@ -2,13 +2,16 @@
 
 import { useState, useTransition } from "react";
 import { createNote, updateNote, deleteNote, togglePinNote } from "@/lib/services/notes";
-import { Plus, Trash2, Pin, StickyNote, Save } from "lucide-react";
+import { Plus, Trash2, Pin, StickyNote, Save, ArrowLeft, X } from "lucide-react";
 import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import type { Note } from "@prisma/client";
 
 interface NotesViewProps { notes: Note[]; }
+
+const inputCls =
+  "bg-surface-raised border border-outline rounded-lg px-3 py-2 text-sm text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/60 transition-colors";
 
 export function NotesView({ notes }: NotesViewProps) {
   const [showForm, setShowForm] = useState(false);
@@ -41,59 +44,161 @@ export function NotesView({ notes }: NotesViewProps) {
   };
 
   const handleDelete = (id: string) => {
-    startTransition(async () => { await deleteNote(id); toast.success("Note deleted"); setEditingNote(null); });
+    startTransition(async () => {
+      await deleteNote(id);
+      toast.success("Note deleted");
+      setEditingNote(null);
+    });
   };
 
   const handlePin = (id: string) => {
     startTransition(async () => { await togglePinNote(id); });
   };
 
+  /* ── Note editor ── */
   if (editingNote) {
     return (
       <div className="space-y-4">
         <div className="flex items-center gap-3">
-          <button onClick={() => setEditingNote(null)} className="text-sm text-zinc-400 hover:text-white">← Back</button>
-          <button onClick={handleSave} disabled={isPending} className="flex items-center gap-1 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium ml-auto"><Save size={14} /> Save</button>
+          <button
+            onClick={() => setEditingNote(null)}
+            className="flex items-center gap-1.5 text-[12px] text-muted-fg hover:text-foreground transition-colors"
+          >
+            <ArrowLeft size={14} /> Back to notes
+          </button>
+          <div className="flex-1" />
+          <button
+            onClick={() => handleDelete(editingNote.id)}
+            className="flex items-center gap-1 text-[12px] text-subtle-fg hover:text-rose transition-colors p-1.5 rounded-lg hover:bg-rose/10"
+            disabled={isPending}
+          >
+            <Trash2 size={13} />
+          </button>
+          <button
+            onClick={handleSave}
+            disabled={isPending}
+            className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-background text-[12px] font-semibold hover:bg-accent-light transition-colors"
+          >
+            <Save size={12} />
+            {isPending ? "Saving…" : "Save"}
+          </button>
         </div>
-        <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} className="w-full bg-transparent text-xl font-bold focus:outline-none" placeholder="Note title" />
-        <textarea value={content} onChange={(e) => setContent(e.target.value)} className="w-full bg-zinc-900 border border-zinc-800 rounded-xl p-4 text-sm min-h-[300px] focus:outline-none focus:border-zinc-700 resize-none font-mono" placeholder="Write your note in markdown..." />
+        <input
+          type="text"
+          value={title}
+          onChange={(e) => setTitle(e.target.value)}
+          className="w-full bg-transparent text-xl font-bold text-foreground focus:outline-none placeholder:text-subtle-fg"
+          placeholder="Note title"
+        />
+        <textarea
+          value={content}
+          onChange={(e) => setContent(e.target.value)}
+          className="w-full bg-surface border border-outline rounded-xl p-4 text-sm text-muted-fg min-h-[320px] focus:outline-none focus:border-accent/40 resize-none font-mono leading-relaxed"
+          placeholder="Write your note…"
+        />
       </div>
     );
   }
 
+  /* ── Notes list ── */
   return (
     <div>
-      <div className="flex justify-between items-center mb-4">
-        <p className="text-sm text-zinc-400">{notes.length} notes</p>
-        <button onClick={() => setShowForm(!showForm)} className="flex items-center gap-2 px-3 py-1.5 rounded-lg bg-blue-600 hover:bg-blue-500 text-sm font-medium transition-colors"><Plus size={16} /> New Note</button>
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <p className="text-sm text-muted-fg">{notes.length} note{notes.length !== 1 ? "s" : ""}</p>
+        </div>
+        <button
+          onClick={() => setShowForm(!showForm)}
+          className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg bg-accent text-background text-[12px] font-semibold hover:bg-accent-light transition-colors"
+        >
+          <Plus size={13} /> New Note
+        </button>
       </div>
 
       {showForm && (
-        <form onSubmit={handleCreate} className="bg-zinc-900 border border-zinc-800 rounded-xl p-4 mb-4 space-y-3">
-          <input type="text" value={title} onChange={(e) => setTitle(e.target.value)} placeholder="Note title" className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500" autoFocus />
-          <textarea value={content} onChange={(e) => setContent(e.target.value)} placeholder="Content (markdown)" rows={4} className="w-full bg-zinc-800 border border-zinc-700 rounded-lg px-3 py-2 text-sm focus:outline-none focus:border-blue-500 resize-none" />
-          <div className="flex gap-2">
-            <button type="button" onClick={() => setShowForm(false)} className="flex-1 px-3 py-2 rounded-lg bg-zinc-800 hover:bg-zinc-700 text-sm">Cancel</button>
-            <button type="submit" disabled={!title.trim() || isPending} className="flex-1 px-3 py-2 rounded-lg bg-blue-600 hover:bg-blue-500 disabled:bg-zinc-800 disabled:text-zinc-500 text-sm font-medium">{isPending ? "Creating..." : "Create"}</button>
+        <form
+          onSubmit={handleCreate}
+          className="bg-surface border border-outline rounded-xl p-4 mb-4 space-y-3 shadow-[0_1px_3px_rgba(0,0,0,0.3)]"
+        >
+          <input
+            type="text"
+            value={title}
+            onChange={(e) => setTitle(e.target.value)}
+            placeholder="Note title"
+            className={cn(inputCls, "w-full")}
+            autoFocus
+          />
+          <textarea
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="Content…"
+            rows={3}
+            className={cn(inputCls, "w-full resize-none")}
+          />
+          <div className="flex gap-2 pt-1">
+            <button
+              type="button"
+              onClick={() => setShowForm(false)}
+              className="flex-1 px-3 py-2 rounded-lg bg-surface-raised hover:bg-elevated text-sm text-muted-fg transition-colors"
+            >
+              Cancel
+            </button>
+            <button
+              type="submit"
+              disabled={!title.trim() || isPending}
+              className="flex-1 px-3 py-2 rounded-lg bg-accent hover:bg-accent-light text-background text-sm font-semibold disabled:bg-surface-raised disabled:text-subtle-fg transition-colors"
+            >
+              {isPending ? "Creating…" : "Create"}
+            </button>
           </div>
         </form>
       )}
 
       {notes.length === 0 ? (
-        <div className="text-center py-12 text-zinc-500"><StickyNote size={32} className="mx-auto mb-2" /><p className="text-sm">No notes yet</p></div>
+        <div className="text-center py-14">
+          <StickyNote size={28} className="mx-auto mb-3 text-subtle-fg" />
+          <p className="text-sm text-muted-fg">No notes yet</p>
+          <p className="text-[12px] text-subtle-fg mt-1">Create your first note above</p>
+        </div>
       ) : (
-        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+        <div className="grid gap-3" style={{ gridTemplateColumns: "repeat(auto-fit, minmax(280px, 1fr))" }}>
           {notes.map((note) => (
-            <div key={note.id} onClick={() => { setEditingNote(note); setTitle(note.title); setContent(note.content); }} className={cn("group cursor-pointer p-4 rounded-xl border bg-zinc-900/50 hover:bg-zinc-800/50 transition-all", note.pinned ? "border-yellow-800/50" : "border-zinc-800")}>
-              <div className="flex items-start justify-between mb-2">
-                <h3 className="font-medium text-sm truncate flex-1">{note.title}</h3>
-                <div className="flex gap-1 ml-2">
-                  <button onClick={(e) => { e.stopPropagation(); handlePin(note.id); }} className={cn("p-1 transition-all", note.pinned ? "text-yellow-400" : "opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-yellow-400")}><Pin size={12} /></button>
-                  <button onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }} className="opacity-0 group-hover:opacity-100 text-zinc-500 hover:text-red-400 p-1 transition-all"><Trash2 size={12} /></button>
+            <div
+              key={note.id}
+              onClick={() => { setEditingNote(note); setTitle(note.title); setContent(note.content); }}
+              className={cn(
+                "group cursor-pointer p-4 rounded-xl border bg-surface hover:bg-surface-raised transition-all",
+                note.pinned ? "border-accent/30" : "border-outline hover:border-outline-strong"
+              )}
+            >
+              <div className="flex items-start justify-between mb-2 gap-2">
+                <h3 className="font-semibold text-sm text-foreground truncate flex-1">{note.title}</h3>
+                <div className="flex gap-0.5 flex-shrink-0">
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handlePin(note.id); }}
+                    className={cn(
+                      "p-1 rounded transition-all",
+                      note.pinned
+                        ? "text-accent"
+                        : "opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-accent"
+                    )}
+                  >
+                    <Pin size={11} />
+                  </button>
+                  <button
+                    onClick={(e) => { e.stopPropagation(); handleDelete(note.id); }}
+                    className="opacity-0 group-hover:opacity-100 text-subtle-fg hover:text-rose p-1 rounded transition-all"
+                  >
+                    <X size={11} />
+                  </button>
                 </div>
               </div>
-              <p className="text-xs text-zinc-500 line-clamp-2 mb-2">{note.content || "Empty note"}</p>
-              <p className="text-xs text-zinc-600">{formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}</p>
+              <p className="text-[12px] text-muted-fg line-clamp-2 leading-relaxed mb-3">
+                {note.content || "Empty note"}
+              </p>
+              <p className="text-[11px] text-subtle-fg">
+                {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
+              </p>
             </div>
           ))}
         </div>

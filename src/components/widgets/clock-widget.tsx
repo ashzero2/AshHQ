@@ -12,12 +12,16 @@ export function ClockWidget() {
   }, []);
 
   return (
-    <div className="flex flex-col items-center justify-center h-full">
-      <p className="text-4xl lg:text-5xl font-bold tabular-nums tracking-tight">
-        {format(now, "HH:mm")}
-        <span className="text-lg text-zinc-500 ml-1">{format(now, "ss")}</span>
-      </p>
-      <p className="text-sm text-zinc-400 mt-1">
+    <div className="flex flex-col items-center justify-center h-full gap-1">
+      <div className="tabular-nums flex items-baseline gap-1">
+        <span className="text-[3.25rem] lg:text-[4rem] font-bold tracking-[-3px] leading-none text-foreground font-mono">
+          {format(now, "HH:mm")}
+        </span>
+        <span className="text-xl text-subtle-fg font-mono font-light leading-none">
+          {format(now, "ss")}
+        </span>
+      </div>
+      <p className="text-[11px] text-muted-fg font-medium tracking-wide">
         {format(now, "EEEE, MMMM d, yyyy")}
       </p>
     </div>

@@ -8,39 +8,61 @@ export async function HabitsWidget() {
 
   if (habits.length === 0) {
     return (
-      <div className="flex flex-col items-center justify-center h-full text-zinc-500">
-        <Target size={24} className="mb-2" />
-        <p className="text-sm">No habits tracked</p>
-        <Link href="/habits" className="text-blue-400 text-xs mt-1 hover:underline">
-          Start a habit
-        </Link>
+      <div className="flex flex-col items-center justify-center h-full gap-3 text-subtle-fg">
+        <div className="w-10 h-10 rounded-xl bg-surface-raised border border-outline flex items-center justify-center">
+          <Target size={17} className="text-muted-fg" />
+        </div>
+        <div className="text-center">
+          <p className="text-xs text-muted-fg">No habits tracked</p>
+          <Link href="/habits" className="text-[11px] text-accent hover:text-accent-light transition-colors mt-0.5 block">
+            Start a habit
+          </Link>
+        </div>
       </div>
     );
   }
 
   const completedToday = habits.filter((h) => h.todayCompleted).length;
+  const pct = habits.length > 0 ? Math.round((completedToday / habits.length) * 100) : 0;
 
   return (
     <div className="flex flex-col h-full">
-      <div className="flex gap-3 mb-3 text-xs">
-        <span className="text-green-400">{completedToday}/{habits.length} done today</span>
+      <div className="flex items-center gap-2 mb-3">
+        <div className="flex-1 bg-surface-raised rounded-full h-1 overflow-hidden">
+          <div
+            className="h-1 rounded-full bg-emerald transition-all duration-500"
+            style={{ width: `${pct}%` }}
+          />
+        </div>
+        <span className="text-[11px] text-muted-fg tabular-nums">{completedToday}/{habits.length}</span>
       </div>
-      <div className="space-y-2 flex-1">
+
+      <div className="space-y-1.5 flex-1 min-h-0 overflow-hidden">
         {habits.slice(0, 4).map((habit) => (
-          <div key={habit.id} className="flex items-center gap-2 text-sm">
-            <span className={cn("w-6 h-6 rounded-md flex items-center justify-center text-xs", habit.todayCompleted ? "bg-green-500/20" : "bg-zinc-800")}>
-              {habit.icon}
+          <div key={habit.id} className="flex items-center gap-2 py-0.5">
+            <span className="text-base leading-none">{habit.icon}</span>
+            <span
+              className={cn(
+                "text-[13px] truncate flex-1 leading-snug",
+                habit.todayCompleted ? "text-emerald line-through opacity-70" : "text-muted-fg"
+              )}
+            >
+              {habit.name}
             </span>
-            <span className={cn("truncate", habit.todayCompleted ? "text-green-400 line-through" : "text-zinc-300")}>{habit.name}</span>
             {habit.currentStreak > 0 && (
-              <span className="flex items-center gap-0.5 text-xs text-orange-400 ml-auto">
-                <Flame size={10} />{habit.currentStreak}
+              <span className="flex items-center gap-0.5 text-[11px] text-amber-warm flex-shrink-0">
+                <Flame size={10} />
+                {habit.currentStreak}
               </span>
             )}
           </div>
         ))}
       </div>
-      <Link href="/habits" className="text-xs text-blue-400 hover:text-blue-300 mt-2 pt-2 border-t border-zinc-800">
+
+      <Link
+        href="/habits"
+        className="text-[11px] text-accent hover:text-accent-light transition-colors mt-2 pt-2 border-t border-outline/60"
+      >
         View all habits →
       </Link>
     </div>

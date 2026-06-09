@@ -1,7 +1,13 @@
 import { PrismaClient } from "@prisma/client";
-import { createHash } from "crypto";
+import { createHmac } from "crypto";
 
 const prisma = new PrismaClient();
+
+const SECRET = process.env.SESSION_SECRET || "ashhq-default-secret-change-me";
+
+function hashPin(pin: string): string {
+  return createHmac("sha256", SECRET).update(pin).digest("hex");
+}
 
 const DEFAULT_LAYOUT = JSON.stringify({
   columns: 12,
@@ -20,7 +26,7 @@ const DEFAULT_LAYOUT = JSON.stringify({
 });
 
 async function main() {
-  const hashedPin = createHash("sha256").update("1234").digest("hex");
+  const hashedPin = hashPin("1234");
 
   await prisma.settings.upsert({
     where: { id: "singleton" },

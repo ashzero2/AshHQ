@@ -17,12 +17,15 @@ export function GreetingWidget() {
   }, []);
 
   return (
-    <div className="flex flex-col justify-center h-full">
-      <h1 className="text-2xl lg:text-3xl font-bold">
-        {greeting}, <span className="text-blue-400">Ash</span> 👋
+    <div className="flex flex-col justify-center h-full gap-1.5">
+      <p className="text-[11px] font-semibold uppercase tracking-[0.14em] text-subtle-fg">
+        {greeting}
+      </p>
+      <h1 className="text-2xl lg:text-3xl font-bold tracking-tight text-foreground">
+        Welcome back, <span className="text-accent">Ash</span>
       </h1>
       {quote && (
-        <p className="text-sm text-zinc-400 mt-2 italic leading-relaxed">
+        <p className="text-sm text-muted-fg leading-relaxed mt-1 font-light italic max-w-md">
           &ldquo;{quote}&rdquo;
         </p>
       )}

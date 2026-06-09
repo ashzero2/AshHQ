@@ -12,7 +12,7 @@ export async function getHabits() {
       logs: {
         where: {
           date: {
-            gte: format(subDays(new Date(), 30), "yyyy-MM-dd"),
+            gte: format(subDays(new Date(), 365), "yyyy-MM-dd"),
           },
         },
         orderBy: { date: "desc" },
