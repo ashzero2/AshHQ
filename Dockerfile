@@ -17,7 +17,11 @@ COPY . .
 RUN npx prisma generate
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
-# Bundle seed.ts to plain JS so the runner stage doesn't need tsx/typescript
+# Pre-build a schema-only SQLite DB so the runner needs no prisma CLI.
+# All prisma deps are available here in the builder stage.
+RUN DATABASE_URL="file:/tmp/schema-template.db" \
+    node node_modules/prisma/build/index.js db push --skip-generate
+# Bundle seed.ts to plain JS (no tsx/typescript needed at runtime)
 RUN node_modules/.bin/esbuild prisma/seed.ts \
     --bundle --platform=node --target=node20 \
     --outfile=prisma/seed.js \
@@ -38,10 +42,9 @@ COPY --from=builder /app/public ./public
 COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/prisma ./prisma
+COPY --from=builder /tmp/schema-template.db ./prisma/schema-template.db
 COPY --from=builder /app/node_modules/.prisma ./node_modules/.prisma
 COPY --from=builder /app/node_modules/@prisma ./node_modules/@prisma
-# prisma CLI needed for db push at startup
-COPY --from=builder /app/node_modules/prisma ./node_modules/prisma
 
 RUN mkdir -p /data && chown -R nextjs:nodejs /data
 
@@ -51,9 +54,11 @@ EXPOSE 3000
 ENV PORT=3000
 ENV HOSTNAME="0.0.0.0"
 
-# On every start: sync DB schema.
-# On FIRST start only (.seeded flag in persistent volume): seed default data.
+# Startup:
+#   1. If no DB yet, copy the pre-built schema template (creates tables instantly, no CLI needed).
+#   2. On first boot (.seeded absent), run the seed script.
+#   3. Start the server.
 CMD ["sh", "-c", "\
-  node node_modules/prisma/build/index.js db push --skip-generate && \
+  ([ -f /data/ashhq.db ] || cp /app/prisma/schema-template.db /data/ashhq.db) && \
   ([ -f /data/.seeded ] || (node prisma/seed.js && touch /data/.seeded)) && \
   node server.js"]
