@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useState, useCallback } from "react";
+import { useKeyboardShortcut } from "@/hooks/use-keyboard-shortcut";
 import { Command } from "cmdk";
 import { useRouter } from "next/navigation";
 import {
@@ -26,17 +27,10 @@ export function CommandPalette() {
   const router = useRouter();
   const { theme, setTheme } = useTheme();
 
-  useEffect(() => {
-    const down = (e: KeyboardEvent) => {
-      if (e.key === "k" && (e.metaKey || e.ctrlKey)) {
-        e.preventDefault();
-        setOpen((o) => !o);
-      }
-      if (e.key === "Escape") setOpen(false);
-    };
-    document.addEventListener("keydown", down);
-    return () => document.removeEventListener("keydown", down);
-  }, []);
+  const toggle = useCallback(() => setOpen((o) => !o), []);
+  const close = useCallback(() => setOpen(false), []);
+  useKeyboardShortcut("k", toggle, { ctrlOrMeta: true });
+  useKeyboardShortcut("Escape", close, { preventDefault: false });
 
   const navigate = (path: string) => {
     router.push(path);

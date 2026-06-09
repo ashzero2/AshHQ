@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
+import { useDebounce } from "@/hooks/use-debounce";
 import { createLink, deleteLink } from "@/lib/services/links";
 import { toast } from "sonner";
 import { Plus, Trash2, ExternalLink, Link2, Search, X, FolderOpen } from "lucide-react";
@@ -19,6 +20,7 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
   const [isPending, startTransition] = useTransition();
   const [showForm, setShowForm] = useState(false);
   const [search, setSearch] = useState("");
+  const debouncedSearch = useDebounce(search, 200);
   const [activeCategory, setActiveCategory] = useState<string | null>(null);
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
@@ -33,10 +35,10 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
 
   const filtered = links.filter((l) => {
     const matchesSearch =
-      !search ||
-      l.title.toLowerCase().includes(search.toLowerCase()) ||
-      l.url.toLowerCase().includes(search.toLowerCase()) ||
-      l.category?.toLowerCase().includes(search.toLowerCase());
+      !debouncedSearch ||
+      l.title.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      l.url.toLowerCase().includes(debouncedSearch.toLowerCase()) ||
+      l.category?.toLowerCase().includes(debouncedSearch.toLowerCase());
     const matchesCategory = !activeCategory || l.category === activeCategory;
     return matchesSearch && matchesCategory;
   });

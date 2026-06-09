@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useTransition } from "react";
-import { createTransaction, deleteTransaction } from "@/lib/services/finance";
+import { createTransaction, deleteTransaction, getTransactionPage } from "@/lib/services/finance";
 import { formatCurrency, cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
 import { EXPENSE_CATEGORIES, INCOME_CATEGORIES } from "@/lib/constants";
@@ -20,6 +20,7 @@ interface MonthData { name: string; income: number; expenses: number }
 
 interface FinanceViewProps {
   transactions: Transaction[];
+  initialNextCursor: string | null;
   summary: {
     totalIncome: number;
     totalExpenses: number;
@@ -68,10 +69,22 @@ function MonthlyBarChart({ data }: { data: MonthData[] }) {
   );
 }
 
-export function FinanceView({ transactions, summary, monthlyData }: FinanceViewProps) {
+export function FinanceView({ transactions: initialTransactions, initialNextCursor, summary, monthlyData }: FinanceViewProps) {
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
+  const [loadingMore, startLoadMore] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
+  const [transactions, setTransactions] = useState<Transaction[]>(initialTransactions);
+  const [nextCursor, setNextCursor] = useState<string | null>(initialNextCursor);
+
+  const handleLoadMore = () => {
+    if (!nextCursor) return;
+    startLoadMore(async () => {
+      const page = await getTransactionPage(nextCursor);
+      setTransactions((prev) => [...prev, ...page.items]);
+      setNextCursor(page.nextCursor);
+    });
+  };
   const [type, setType] = useState<"INCOME" | "EXPENSE">("EXPENSE");
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
@@ -85,13 +98,14 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
     if (!amount || !category) return;
     startTransition(async () => {
       try {
-        await createTransaction({
+        const tx = await createTransaction({
           amount: parseFloat(amount),
           type,
           category,
           description: description.trim() || null,
           date: new Date(date),
         });
+        setTransactions((prev) => [tx, ...prev]);
         toast.success("Transaction added");
         setAmount(""); setCategory(""); setDescription(""); setShowForm(false);
       } catch { toast.error("Failed to add transaction"); }
@@ -101,6 +115,7 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
   const handleDelete = (id: string) => {
     startTransition(async () => {
       await deleteTransaction(id);
+      setTransactions((prev) => prev.filter((t) => t.id !== id));
       toast.success("Transaction deleted");
     });
   };
@@ -296,6 +311,16 @@ export function FinanceView({ transactions, summary, monthlyData }: FinanceViewP
               <Wallet size={28} className="mx-auto mb-2 text-subtle-fg" />
               <p className="text-sm text-muted-fg">No transactions yet</p>
             </div>
+          )}
+
+          {nextCursor && (
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="w-full mt-2 py-2.5 rounded-xl border border-outline text-sm text-muted-fg hover:text-foreground hover:border-outline-strong transition-colors disabled:opacity-50"
+            >
+              {loadingMore ? "Loading…" : "Load more transactions"}
+            </button>
           )}
 
           {confirmDelete && (

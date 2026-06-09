@@ -141,7 +141,6 @@ export interface HabitLog {
 export interface HabitWithStreak extends Habit {
   currentStreak: number;
   longestStreak: number;
-  todayCompleted: boolean;
   logs: HabitLog[];
 }
 
@@ -186,9 +185,17 @@ export interface AppSettings {
   openaiModel: string;
   ollamaBaseUrl: string;
   ollamaModel: string;
+  geminiApiKey: string | null;
+  geminiModel: string;
   weatherApiKey: string | null;
   weatherCity: string;
   temperatureUnit: "C" | "F";
   theme: "light" | "dark" | "system";
   dashboardLayout: DashboardLayout;
+}
+
+export interface ActionResult<T = void> {
+  success: boolean;
+  data?: T;
+  error?: string;
 }

@@ -27,6 +27,20 @@ export async function getTransactions(filters?: {
   });
 }
 
+export async function getTransactionPage(cursor?: string, take = 50) {
+  await requireAuth();
+  const items = await prisma.transaction.findMany({
+    take: take + 1,
+    ...(cursor ? { cursor: { id: cursor }, skip: 1 } : {}),
+    orderBy: { date: "desc" },
+  });
+  const hasMore = items.length > take;
+  return {
+    items: hasMore ? items.slice(0, take) : items,
+    nextCursor: hasMore ? items[take - 1].id : null,
+  };
+}
+
 export async function createTransaction(data: CreateTransactionInput) {
   await requireAuth();
   const parsed = CreateTransactionSchema.parse(data);

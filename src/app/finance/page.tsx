@@ -1,6 +1,6 @@
 export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
-import { getTransactions, getFinanceSummary } from "@/lib/services/finance";
+import { getTransactionPage, getFinanceSummary } from "@/lib/services/finance";
 import { FinanceView } from "@/components/features/finance/finance-view";
 import { format } from "date-fns";
 
@@ -12,8 +12,8 @@ export default async function FinancePage() {
     return { month: d.getMonth() + 1, year: d.getFullYear(), label: format(d, "MMM") };
   });
 
-  const [transactions, summary, ...monthSummaries] = await Promise.all([
-    getTransactions(),
+  const [txPage, summary, ...monthSummaries] = await Promise.all([
+    getTransactionPage(),
     getFinanceSummary(now.getMonth() + 1, now.getFullYear()),
     ...chartMonths.map(({ month, year, label }) =>
       getFinanceSummary(month, year).then((s) => ({
@@ -31,7 +31,12 @@ export default async function FinancePage() {
           <h1 className="text-xl font-bold text-foreground tracking-tight">Finance</h1>
           <p className="text-sm text-muted-fg mt-0.5">Track your income and expenses</p>
         </div>
-        <FinanceView transactions={transactions} summary={summary} monthlyData={monthSummaries} />
+        <FinanceView
+          transactions={txPage.items}
+          initialNextCursor={txPage.nextCursor}
+          summary={summary}
+          monthlyData={monthSummaries}
+        />
       </div>
     </AppShell>
   );
