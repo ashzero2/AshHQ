@@ -13,6 +13,13 @@ export async function getSettings() {
   return settings;
 }
 
+export async function saveDashboardLayout(layout: object) {
+  await prisma.settings.update({
+    where: { id: "singleton" },
+    data: { dashboardLayout: JSON.stringify(layout) },
+  });
+}
+
 export async function updateSettings(data: UpdateSettingsInput) {
   const parsed = UpdateSettingsSchema.parse(data);
   const settings = await prisma.settings.update({

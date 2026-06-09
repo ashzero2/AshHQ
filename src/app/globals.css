@@ -71,3 +71,24 @@ select {
   background-position: right 10px center;
   padding-right: 28px !important;
 }
+
+/* react-grid-layout: hide default placeholder bg, theme resize handle */
+.react-grid-item.react-grid-placeholder {
+  background: rgba(232, 192, 108, 0.08) !important;
+  border: 1px dashed rgba(232, 192, 108, 0.25) !important;
+  border-radius: 12px !important;
+  opacity: 1 !important;
+}
+
+.react-resizable-handle {
+  opacity: 0;
+  transition: opacity 150ms;
+}
+
+.react-grid-item:hover .react-resizable-handle {
+  opacity: 1;
+}
+
+.react-resizable-handle::after {
+  border-color: var(--color-outline-strong) !important;
+}
