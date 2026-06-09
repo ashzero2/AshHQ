@@ -1,0 +1,21 @@
+[Unit]
+Description=AshHQ Personal Command Center
+After=network.target
+
+[Service]
+Type=simple
+User=CHANGEME
+WorkingDirectory=/home/CHANGEME/ashhq
+EnvironmentFile=/home/CHANGEME/ashhq/.env
+Environment=NODE_ENV=production
+Environment=PORT=3000
+Environment=HOSTNAME=127.0.0.1
+# Run: which node — and replace /usr/bin/node with the result
+ExecStart=/usr/bin/node /home/CHANGEME/ashhq/node_modules/.bin/next start
+Restart=always
+RestartSec=5
+StandardOutput=journal
+StandardError=journal
+
+[Install]
+WantedBy=multi-user.target
