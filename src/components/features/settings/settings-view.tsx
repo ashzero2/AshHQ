@@ -112,8 +112,8 @@ export function SettingsView({ settings }: SettingsViewProps) {
     if (!tgToken || !tgChatId) return;
     setTgTestStatus("testing");
     setTgTestMessage("");
-    testTelegramConnection(tgToken, tgChatId).then(({ ok, error }) => {
-      if (ok) { setTgTestStatus("ok"); setTgTestMessage("Message sent!"); }
+    testTelegramConnection(tgToken, tgChatId).then(({ success, error }) => {
+      if (success) { setTgTestStatus("ok"); setTgTestMessage("Message sent!"); }
       else { setTgTestStatus("error"); setTgTestMessage(error ?? "Failed"); }
     }).catch(() => { setTgTestStatus("error"); setTgTestMessage("Network error"); });
   };
