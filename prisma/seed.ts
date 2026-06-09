@@ -1,12 +1,10 @@
 import { PrismaClient } from "@prisma/client";
-import { createHmac } from "crypto";
+import bcrypt from "bcryptjs";
 
 const prisma = new PrismaClient();
 
-const SECRET = process.env.SESSION_SECRET || "ashhq-default-secret-change-me";
-
-function hashPin(pin: string): string {
-  return createHmac("sha256", SECRET).update(pin).digest("hex");
+async function hashPin(pin: string): Promise<string> {
+  return bcrypt.hash(pin, 12);
 }
 
 const DEFAULT_LAYOUT = JSON.stringify({
@@ -26,19 +24,17 @@ const DEFAULT_LAYOUT = JSON.stringify({
 });
 
 async function main() {
-  const hashedPin = hashPin("1234");
+  const existing = await prisma.settings.findUnique({ where: { id: "singleton" } });
 
-  await prisma.settings.upsert({
-    where: { id: "singleton" },
-    update: { pin: hashedPin },
-    create: {
-      id: "singleton",
-      pin: hashedPin,
-      dashboardLayout: DEFAULT_LAYOUT,
-    },
-  });
-
-  console.log("✅ Seed complete — default PIN is 1234");
+  if (!existing) {
+    const hashedPin = await hashPin("1234");
+    await prisma.settings.create({
+      data: { id: "singleton", pin: hashedPin, dashboardLayout: DEFAULT_LAYOUT },
+    });
+    console.log("✅ Seed complete — default PIN is 1234");
+  } else {
+    console.log("✅ Settings already exist — skipping seed");
+  }
 }
 
 main()

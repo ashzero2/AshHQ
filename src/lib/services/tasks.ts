@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth-guard";
 import { CreateTaskSchema, UpdateTaskSchema } from "@/lib/validations";
 import type { CreateTaskInput, UpdateTaskInput } from "@/lib/validations";
 
@@ -10,6 +11,7 @@ export async function getTasks(filters?: {
   priority?: string;
   category?: string;
 }) {
+  await requireAuth();
   const where: Record<string, string> = {};
   if (filters?.status) where.status = filters.status;
   if (filters?.priority) where.priority = filters.priority;
@@ -22,18 +24,20 @@ export async function getTasks(filters?: {
 }
 
 export async function getTaskById(id: string) {
+  await requireAuth();
   return prisma.task.findUnique({ where: { id } });
 }
 
 export async function createTask(data: CreateTaskInput) {
+  await requireAuth();
   const parsed = CreateTaskSchema.parse(data);
   const task = await prisma.task.create({ data: parsed });
-  revalidatePath("/");
   revalidatePath("/tasks");
   return task;
 }
 
 export async function updateTask(data: UpdateTaskInput) {
+  await requireAuth();
   const parsed = UpdateTaskSchema.parse(data);
   const { id, ...updateData } = parsed;
 
@@ -49,18 +53,18 @@ export async function updateTask(data: UpdateTaskInput) {
     where: { id },
     data: updateData,
   });
-  revalidatePath("/");
   revalidatePath("/tasks");
   return task;
 }
 
 export async function deleteTask(id: string) {
+  await requireAuth();
   await prisma.task.delete({ where: { id } });
-  revalidatePath("/");
   revalidatePath("/tasks");
 }
 
 export async function getTaskStats() {
+  await requireAuth();
   const tasks = await prisma.task.findMany();
   const now = new Date();
 

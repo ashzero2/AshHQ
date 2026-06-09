@@ -2,7 +2,7 @@
 
 import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
-import { hashPin, generateSessionToken } from "@/lib/server-utils";
+import { hashPin, comparePin, generateSessionToken } from "@/lib/server-utils";
 
 const SESSION_COOKIE = "ashhq-session";
 const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
@@ -11,6 +11,14 @@ const SESSION_MAX_AGE = 60 * 60 * 24 * 30; // 30 days
 const loginAttempts = new Map<string, { count: number; resetAt: number }>();
 const MAX_ATTEMPTS = 5;
 const WINDOW_MS = 60 * 1000; // 1 minute
+
+// Purge expired entries every 5 minutes to prevent unbounded growth
+setInterval(() => {
+  const now = Date.now();
+  for (const [ip, entry] of loginAttempts.entries()) {
+    if (now > entry.resetAt) loginAttempts.delete(ip);
+  }
+}, 5 * 60 * 1000);
 
 function checkRateLimit(ip: string): { allowed: boolean; retryAfterSecs: number } {
   const now = Date.now();
@@ -53,12 +61,18 @@ export async function verifyPin(pin: string, ip = "unknown"): Promise<{ success:
   const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
   if (!settings) return { success: false, error: "Not configured" };
 
-  const hashedInput = hashPin(pin);
-  if (hashedInput !== settings.pin) {
+  const valid = await comparePin(pin, settings.pin);
+  if (!valid) {
     return { success: false, error: "Incorrect PIN" };
   }
 
   clearRateLimit(ip);
+
+  // Migrate legacy HMAC hash to bcrypt on first successful login
+  if (!settings.pin.startsWith("$2")) {
+    const newHash = await hashPin(pin);
+    await prisma.settings.update({ where: { id: "singleton" }, data: { pin: newHash } }).catch(() => {});
+  }
 
   // Create secure session token in DB
   const token = generateSessionToken();
@@ -85,10 +99,10 @@ export async function changePin(currentPin: string, newPin: string): Promise<boo
   const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
   if (!settings) return false;
 
-  const hashedCurrent = hashPin(currentPin);
-  if (hashedCurrent !== settings.pin) return false;
+  const valid = await comparePin(currentPin, settings.pin);
+  if (!valid) return false;
 
-  const hashedNew = hashPin(newPin);
+  const hashedNew = await hashPin(newPin);
   await prisma.settings.update({ where: { id: "singleton" }, data: { pin: hashedNew } });
 
   // Invalidate all sessions on PIN change

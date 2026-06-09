@@ -2,9 +2,11 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth-guard";
 import { startOfDay, endOfDay, subDays } from "date-fns";
 
 export async function createFocusSession(data: { duration: number; type: string; taskId?: string | null }) {
+  await requireAuth();
   const session = await prisma.focusSession.create({
     data: {
       duration: data.duration,
@@ -18,6 +20,7 @@ export async function createFocusSession(data: { duration: number; type: string;
 }
 
 export async function getFocusStats(days = 7) {
+  await requireAuth();
   const since = subDays(new Date(), days);
   const sessions = await prisma.focusSession.findMany({
     where: { completedAt: { gte: since }, type: "WORK" },

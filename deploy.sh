@@ -18,6 +18,9 @@ npx prisma generate
 echo "→ Running migrations..."
 npx prisma migrate deploy
 
+echo "→ Seeding database..."
+npx tsx prisma/seed.ts
+
 echo "→ Building..."
 npm run build
 

@@ -2,11 +2,13 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth-guard";
 import { CreateHabitSchema } from "@/lib/validations";
 import type { CreateHabitInput } from "@/lib/validations";
-import { format, subDays, eachDayOfInterval } from "date-fns";
+import { format, subDays } from "date-fns";
 
 export async function getHabits() {
+  await requireAuth();
   const habits = await prisma.habit.findMany({
     include: {
       logs: {
@@ -85,20 +87,21 @@ function calculateLongestStreak(logs: { date: string; completed: boolean }[]) {
 }
 
 export async function createHabit(data: CreateHabitInput) {
+  await requireAuth();
   const parsed = CreateHabitSchema.parse(data);
   const habit = await prisma.habit.create({ data: parsed });
-  revalidatePath("/");
   revalidatePath("/habits");
   return habit;
 }
 
 export async function deleteHabit(id: string) {
+  await requireAuth();
   await prisma.habit.delete({ where: { id } });
-  revalidatePath("/");
   revalidatePath("/habits");
 }
 
 export async function toggleHabitLog(habitId: string, date: string) {
+  await requireAuth();
   const existing = await prisma.habitLog.findUnique({
     where: { habitId_date: { habitId, date } },
   });
@@ -111,6 +114,5 @@ export async function toggleHabitLog(habitId: string, date: string) {
     });
   }
 
-  revalidatePath("/");
   revalidatePath("/habits");
 }

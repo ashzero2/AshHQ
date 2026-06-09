@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { prisma } from "@/lib/db";
+import { requireAuth } from "@/lib/auth-guard";
 import { CreateTransactionSchema, CreateBudgetSchema } from "@/lib/validations";
 import type { CreateTransactionInput, CreateBudgetInput } from "@/lib/validations";
 
@@ -11,6 +12,7 @@ export async function getTransactions(filters?: {
   startDate?: Date;
   endDate?: Date;
 }) {
+  await requireAuth();
   const where: Record<string, unknown> = {};
   if (filters?.type) where.type = filters.type;
   if (filters?.category) where.category = filters.category;
@@ -26,20 +28,21 @@ export async function getTransactions(filters?: {
 }
 
 export async function createTransaction(data: CreateTransactionInput) {
+  await requireAuth();
   const parsed = CreateTransactionSchema.parse(data);
   const tx = await prisma.transaction.create({ data: parsed });
-  revalidatePath("/");
   revalidatePath("/finance");
   return tx;
 }
 
 export async function deleteTransaction(id: string) {
+  await requireAuth();
   await prisma.transaction.delete({ where: { id } });
-  revalidatePath("/");
   revalidatePath("/finance");
 }
 
 export async function getFinanceSummary(month: number, year: number) {
+  await requireAuth();
   const startDate = new Date(year, month - 1, 1);
   const endDate = new Date(year, month, 0, 23, 59, 59);
 
@@ -77,10 +80,12 @@ export async function getFinanceSummary(month: number, year: number) {
 }
 
 export async function getBudgets(month: number, year: number) {
+  await requireAuth();
   return prisma.budget.findMany({ where: { month, year } });
 }
 
 export async function createBudget(data: CreateBudgetInput) {
+  await requireAuth();
   const parsed = CreateBudgetSchema.parse(data);
   const budget = await prisma.budget.upsert({
     where: {
@@ -98,6 +103,7 @@ export async function createBudget(data: CreateBudgetInput) {
 }
 
 export async function deleteBudget(id: string) {
+  await requireAuth();
   await prisma.budget.delete({ where: { id } });
   revalidatePath("/finance");
 }
