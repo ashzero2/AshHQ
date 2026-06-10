@@ -7,6 +7,14 @@ import type { ChannelNotificationPayload, ChannelActionablePayload, Notification
 registerChannel(telegramChannel);
 
 async function getTelegramConfig(): Promise<Record<string, unknown> | null> {
+  // Env vars take precedence over DB — useful for Docker deployments
+  const envToken = process.env.TELEGRAM_BOT_TOKEN;
+  const envChatId = process.env.TELEGRAM_CHAT_ID;
+  const envEnabled = process.env.TELEGRAM_ENABLED;
+  if (envToken && envChatId && envEnabled !== "false") {
+    return { botToken: envToken, chatId: envChatId };
+  }
+
   const s = await prisma.settings.findUnique({ where: { id: "singleton" } });
   if (!s?.telegramBotToken || !s.telegramChatId || !s.telegramEnabled) return null;
   return { botToken: s.telegramBotToken, chatId: s.telegramChatId };

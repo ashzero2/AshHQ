@@ -71,6 +71,9 @@ Open [http://localhost:3000](http://localhost:3000). The default PIN is `1234` â
 | `GEMINI_API_KEY` | No | Can also be set in the Settings UI. |
 | `WEATHER_API_KEY` | No | OpenWeatherMap key. Can be set in Settings UI. |
 | `OLLAMA_BASE_URL` | No | Defaults to `http://localhost:11434`. |
+| `TELEGRAM_BOT_TOKEN` | No | Telegram bot token from @BotFather. Env var takes precedence over Settings UI. |
+| `TELEGRAM_CHAT_ID` | No | Your Telegram user/chat ID from @userinfobot. |
+| `TELEGRAM_ENABLED` | No | Set to `false` to disable Telegram even if token/chat ID are set. Defaults to `true`. |
 | `SCHEDULER_SECRET` | No | Bearer secret for `POST /api/scheduler`. If unset, the endpoint is open. |
 
 ---
