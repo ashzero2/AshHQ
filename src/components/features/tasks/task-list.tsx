@@ -3,8 +3,9 @@
 import { useState } from "react";
 import { TaskCard } from "./task-card";
 import { TaskForm } from "./task-form";
-import { Plus } from "lucide-react";
-import type { Task } from "@prisma/client";
+import { RecurringTaskList } from "./recurring-task-list";
+import { Plus, Repeat } from "lucide-react";
+import type { Task, RecurringTask } from "@prisma/client";
 
 const FILTERS = [
   { key: "ALL", label: "All" },
@@ -16,9 +17,11 @@ const FILTERS = [
 
 interface TaskListProps {
   tasks: Task[];
+  recurringTasks: RecurringTask[];
 }
 
-export function TaskList({ tasks }: TaskListProps) {
+export function TaskList({ tasks, recurringTasks }: TaskListProps) {
+  const [tab, setTab] = useState<"tasks" | "recurring">("tasks");
   const [showForm, setShowForm] = useState(false);
   const [editingTask, setEditingTask] = useState<Task | null>(null);
   const [filter, setFilter] = useState<string>("ALL");
@@ -32,6 +35,22 @@ export function TaskList({ tasks }: TaskListProps) {
 
   const activeTasks = filtered.filter((t) => t.status !== "DONE");
   const doneTasks = filtered.filter((t) => t.status === "DONE");
+
+  if (tab === "recurring") {
+    return (
+      <div className="w-full">
+        <div className="flex gap-1 mb-5">
+          <button onClick={() => setTab("tasks")} className="text-[12px] px-3 py-1.5 rounded-lg font-medium bg-surface-raised text-muted-fg border border-outline hover:text-foreground transition-colors">
+            Tasks
+          </button>
+          <button className="text-[12px] px-3 py-1.5 rounded-lg font-medium bg-accent text-background transition-colors flex items-center gap-1.5">
+            <Repeat size={11} /> Recurring
+          </button>
+        </div>
+        <RecurringTaskList initialTasks={recurringTasks} />
+      </div>
+    );
+  }
 
   return (
     <div className="w-full">
@@ -52,6 +71,12 @@ export function TaskList({ tasks }: TaskListProps) {
                 {f.label}
               </button>
             ))}
+            <button
+              onClick={() => setTab("recurring")}
+              className="text-[12px] px-3 py-1.5 rounded-lg transition-colors font-medium whitespace-nowrap flex-shrink-0 bg-surface-raised text-muted-fg hover:text-foreground border border-outline hover:border-outline-strong flex items-center gap-1"
+            >
+              <Repeat size={11} /> Recurring
+            </button>
           </div>
           <button
             onClick={() => { setEditingTask(null); setShowForm(true); }}

@@ -1,6 +1,7 @@
 export const dynamic = "force-dynamic";
 import { AppShell } from "@/components/layout/app-shell";
 import { getTransactionPage, getFinanceSummary } from "@/lib/services/finance";
+import { getRecurringExpenses } from "@/lib/services/recurring-expenses";
 import { FinanceView } from "@/components/features/finance/finance-view";
 import { format } from "date-fns";
 
@@ -12,9 +13,10 @@ export default async function FinancePage() {
     return { month: d.getMonth() + 1, year: d.getFullYear(), label: format(d, "MMM") };
   });
 
-  const [txPage, summary, ...monthSummaries] = await Promise.all([
+  const [txPage, summary, recurringExpenses, ...monthSummaries] = await Promise.all([
     getTransactionPage(),
     getFinanceSummary(now.getMonth() + 1, now.getFullYear()),
+    getRecurringExpenses(),
     ...chartMonths.map(({ month, year, label }) =>
       getFinanceSummary(month, year).then((s) => ({
         name: label,
@@ -36,6 +38,7 @@ export default async function FinancePage() {
           initialNextCursor={txPage.nextCursor}
           summary={summary}
           monthlyData={monthSummaries}
+          recurringExpenses={recurringExpenses}
         />
       </div>
     </AppShell>

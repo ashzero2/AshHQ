@@ -90,6 +90,28 @@ export const UpdateSettingsSchema = z.object({
   timezone: z.string().optional(),
 });
 
+export const RecurringTaskSchema = z.object({
+  title: z.string().min(1).max(200),
+  description: z.string().max(2000).optional(),
+  priority: z.enum(["LOW", "MEDIUM", "HIGH", "URGENT"]).default("MEDIUM"),
+  frequency: z.enum(["DAILY", "WEEKLY", "MONTHLY", "YEARLY", "CUSTOM"]),
+  interval: z.number().int().min(1).max(365).default(1),
+  daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+  cronExpr: z.string().max(100).optional(),
+  nextDueAt: z.coerce.date(),
+});
+
+export const RecurringExpenseSchema = z.object({
+  description: z.string().min(1).max(200),
+  amount: z.number().positive().max(10_000_000),
+  category: z.string().min(1).max(50),
+  frequency: z.enum(["MONTHLY", "WEEKLY", "YEARLY", "CUSTOM"]),
+  interval: z.number().int().min(1).max(365).default(1),
+  dayOfMonth: z.number().int().min(1).max(31).optional(),
+  autoApprove: z.boolean().default(false),
+});
+
 export const PinSchema = z.object({
   pin: z.string().min(4).max(20),
 });
@@ -105,3 +127,5 @@ export type CreateNoteInput = z.infer<typeof CreateNoteSchema>;
 export type UpdateNoteInput = z.infer<typeof UpdateNoteSchema>;
 export type CreateQuickLinkInput = z.infer<typeof CreateQuickLinkSchema>;
 export type UpdateSettingsInput = z.infer<typeof UpdateSettingsSchema>;
+export type RecurringTaskInput = z.infer<typeof RecurringTaskSchema>;
+export type RecurringExpenseInput = z.infer<typeof RecurringExpenseSchema>;

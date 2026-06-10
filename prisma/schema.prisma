@@ -31,20 +31,62 @@ model Settings {
 }
 
 model Task {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  priority    String    @default("MEDIUM")
-  status      String    @default("TODO")
-  category    String?
-  dueDate     DateTime?
-  completedAt DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id              String    @id @default(cuid())
+  title           String
+  description     String?
+  priority        String    @default("MEDIUM")
+  status          String    @default("TODO")
+  category        String?
+  dueDate         DateTime?
+  completedAt     DateTime?
+  recurringTaskId String?
+  reminderAt      DateTime?
+  createdAt       DateTime  @default(now())
+  updatedAt       DateTime  @updatedAt
 
   @@index([status])
   @@index([priority])
   @@index([dueDate])
+  @@index([recurringTaskId])
+}
+
+model RecurringTask {
+  id          String    @id @default(cuid())
+  title       String
+  description String?
+  priority    String    @default("MEDIUM")
+  status      String    @default("ACTIVE")
+  frequency   String
+  interval    Int       @default(1)
+  daysOfWeek  String?
+  dayOfMonth  Int?
+  cronExpr    String?
+  nextDueAt   DateTime
+  lastRunAt   DateTime?
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([nextDueAt])
+  @@index([status])
+}
+
+model RecurringExpense {
+  id          String    @id @default(cuid())
+  description String
+  amount      Float
+  category    String
+  frequency   String
+  interval    Int       @default(1)
+  dayOfMonth  Int?
+  nextDueAt   DateTime
+  lastPaidAt  DateTime?
+  autoApprove Boolean   @default(false)
+  status      String    @default("ACTIVE")
+  createdAt   DateTime  @default(now())
+  updatedAt   DateTime  @updatedAt
+
+  @@index([nextDueAt])
+  @@index([status])
 }
 
 model CalendarEvent {

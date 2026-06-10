@@ -12,9 +12,11 @@ import {
   TrendingDown,
   Wallet,
 } from "lucide-react";
+import { RecurringExpenseList } from "./recurring-expense-list";
+import { Repeat } from "lucide-react";
 import { toast } from "sonner";
 import { format } from "date-fns";
-import type { Transaction } from "@prisma/client";
+import type { Transaction, RecurringExpense } from "@prisma/client";
 
 interface MonthData { name: string; income: number; expenses: number }
 
@@ -28,6 +30,7 @@ interface FinanceViewProps {
     byCategory: { category: string; amount: number; percentage: number }[];
   };
   monthlyData: MonthData[];
+  recurringExpenses: RecurringExpense[];
 }
 
 function MonthlyBarChart({ data }: { data: MonthData[] }) {
@@ -69,7 +72,8 @@ function MonthlyBarChart({ data }: { data: MonthData[] }) {
   );
 }
 
-export function FinanceView({ transactions: initialTransactions, initialNextCursor, summary, monthlyData }: FinanceViewProps) {
+export function FinanceView({ transactions: initialTransactions, initialNextCursor, summary, monthlyData, recurringExpenses }: FinanceViewProps) {
+  const [tab, setTab] = useState<"transactions" | "recurring">("transactions");
   const [showForm, setShowForm] = useState(false);
   const [isPending, startTransition] = useTransition();
   const [loadingMore, startLoadMore] = useTransition();
@@ -189,7 +193,27 @@ export function FinanceView({ transactions: initialTransactions, initialNextCurs
         </div>
       )}
 
-      {/* ── Transactions ── */}
+      {/* ── Tab switcher ── */}
+      <div className="flex gap-1">
+        {(["transactions", "recurring"] as const).map((t) => (
+          <button
+            key={t}
+            onClick={() => setTab(t)}
+            className={`flex items-center gap-1.5 text-[12px] px-3 py-1.5 rounded-lg font-medium transition-colors ${
+              tab === t
+                ? "bg-accent text-background"
+                : "bg-surface-raised text-muted-fg border border-outline hover:text-foreground"
+            }`}
+          >
+            {t === "recurring" && <Repeat size={11} />}
+            {t.charAt(0).toUpperCase() + t.slice(1)}
+          </button>
+        ))}
+      </div>
+
+      {tab === "recurring" ? (
+        <RecurringExpenseList initialExpenses={recurringExpenses} />
+      ) : (
       <div>
         <div className="flex items-center justify-between mb-4">
           <div>
@@ -333,6 +357,7 @@ export function FinanceView({ transactions: initialTransactions, initialNextCurs
           )}
         </div>
       </div>
+      )}
     </div>
   );
 }
