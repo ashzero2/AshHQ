@@ -17,12 +17,18 @@ export async function getJournalByDate(date: string) {
   return prisma.journalEntry.findUnique({ where: { date } });
 }
 
-export async function upsertJournalEntry(data: { date: string; content: string; mood?: string | null }) {
+export async function upsertJournalEntry(data: {
+  date: string;
+  content: string;
+  mood?: string | null;
+  contentType?: string;
+}) {
   await requireAuth();
+  const ct = data.contentType ?? "richtext";
   const entry = await prisma.journalEntry.upsert({
     where: { date: data.date },
-    update: { content: data.content, mood: data.mood ?? null },
-    create: { date: data.date, content: data.content, mood: data.mood ?? null },
+    update: { content: data.content, mood: data.mood ?? null, contentType: ct },
+    create: { date: data.date, content: data.content, mood: data.mood ?? null, contentType: ct },
   });
   revalidatePath("/journal");
   return entry;

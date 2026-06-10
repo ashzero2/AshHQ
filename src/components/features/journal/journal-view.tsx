@@ -5,6 +5,11 @@ import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { upsertJournalEntry, deleteJournalEntry } from "@/lib/services/journal";
 import { BookOpen, Trash2 } from "lucide-react";
+import { RichEditor } from "@/components/shared/rich-editor";
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 interface JournalEntry {
   id: string;
@@ -32,8 +37,9 @@ function moodEmoji(mood: string | null) {
   return MOODS.find((m) => m.key === mood)?.emoji ?? null;
 }
 
-function wordCount(text: string) {
-  return text.trim() ? text.trim().split(/\s+/).length : 0;
+function wordCount(html: string) {
+  const text = stripHtml(html);
+  return text ? text.split(/\s+/).length : 0;
 }
 
 export function JournalView({ entries: initialEntries, todayDate }: JournalViewProps) {
@@ -59,7 +65,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
       setSaveStatus("saving");
       startTransition(async () => {
         try {
-          const updated = await upsertJournalEntry({ date: selectedDate, content: c, mood: m });
+          const updated = await upsertJournalEntry({ date: selectedDate, content: c, mood: m, contentType: "richtext" });
           setEntries((prev) => {
             const idx = prev.findIndex((e) => e.date === selectedDate);
             const cast = updated as unknown as JournalEntry;
@@ -128,7 +134,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
             const entry = entries.find((e) => e.date === date);
             const isToday = date === todayDate;
             const isSelected = date === selectedDate;
-            const firstLine = entry?.content?.split("\n")[0]?.trim() ?? "";
+            const firstLine = stripHtml(entry?.content ?? "").split(" ").slice(0, 8).join(" ");
 
             return (
               <div
@@ -274,35 +280,18 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
 
         {/* Textarea */}
         <div className="flex-1 flex flex-col min-h-0">
-          {entries.length === 0 && !content ? (
-            <div className="flex-1 flex flex-col items-center justify-center text-center gap-3 border border-dashed border-outline rounded-xl">
-              <span className="text-3xl">📓</span>
-              <div>
-                <p className="text-sm font-medium text-foreground">Start your first journal entry</p>
-                <p className="text-[12px] text-muted-fg mt-1">Write anything — thoughts, plans, reflections</p>
-              </div>
-              <button
-                onClick={() => {
-                  const el = document.querySelector("textarea");
-                  el?.focus();
-                }}
-                className="px-3.5 py-1.5 rounded-lg bg-accent hover:bg-accent-light text-background text-[12px] font-semibold transition-colors"
-              >
-                Write now
-              </button>
-            </div>
-          ) : (
-            <textarea
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              placeholder={
-                selectedDate === todayDate
-                  ? "What's on your mind today? Reflect, plan, or just write…"
-                  : "No content for this entry."
-              }
-              className="flex-1 w-full bg-surface border border-outline rounded-xl px-4 py-4 text-sm text-foreground placeholder:text-subtle-fg/60 focus:outline-none focus:border-accent/40 transition-colors resize-none leading-relaxed min-h-[180px]"
-            />
-          )}
+          <RichEditor
+            key={selectedDate}
+            content={current?.content ?? ""}
+            onChange={setContent}
+            placeholder={
+              selectedDate === todayDate
+                ? "What's on your mind today? Reflect, plan, or just write…"
+                : "No content for this entry."
+            }
+            minHeight="180px"
+            className="flex-1"
+          />
           <div className="flex items-center justify-between mt-2 flex-shrink-0">
             <span className="text-[11px] text-subtle-fg">
               {wordCount(content)} word{wordCount(content) !== 1 ? "s" : ""}

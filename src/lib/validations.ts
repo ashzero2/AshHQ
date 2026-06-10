@@ -57,6 +57,7 @@ export const CreateHabitSchema = z.object({
 export const CreateNoteSchema = z.object({
   title: z.string().min(1).max(200),
   content: z.string().optional().default(""),
+  contentType: z.enum(["plaintext", "richtext"]).optional().default("richtext"),
   pinned: z.boolean().optional().default(false),
 });
 

@@ -7,7 +7,12 @@ import { toast } from "sonner";
 import { formatDistanceToNow } from "date-fns";
 import { cn } from "@/lib/utils";
 import { ConfirmDialog } from "@/components/ui/confirm-dialog";
+import { RichEditor } from "@/components/shared/rich-editor";
 import type { Note } from "@prisma/client";
+
+function stripHtml(html: string): string {
+  return html.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim();
+}
 
 interface NotesViewProps { notes: Note[]; }
 
@@ -27,7 +32,7 @@ export function NotesView({ notes }: NotesViewProps) {
     if (!title.trim()) return;
     startTransition(async () => {
       try {
-        await createNote({ title: title.trim(), content, pinned: false });
+        await createNote({ title: title.trim(), content, contentType: "richtext", pinned: false });
         toast.success("Note created");
         setTitle(""); setContent(""); setShowForm(false);
       } catch { toast.error("Failed to create note"); }
@@ -38,7 +43,7 @@ export function NotesView({ notes }: NotesViewProps) {
     if (!editingNote) return;
     startTransition(async () => {
       try {
-        await updateNote({ id: editingNote.id, title, content });
+        await updateNote({ id: editingNote.id, title, content, contentType: "richtext" });
         toast.success("Note saved");
         setEditingNote(null);
       } catch { toast.error("Failed to save"); }
@@ -94,11 +99,13 @@ export function NotesView({ notes }: NotesViewProps) {
           className="w-full bg-transparent text-xl font-bold text-foreground focus:outline-none placeholder:text-subtle-fg"
           placeholder="Note title"
         />
-        <textarea
-          value={content}
-          onChange={(e) => setContent(e.target.value)}
-          className="w-full bg-surface border border-outline rounded-xl p-4 text-sm text-muted-fg min-h-[320px] focus:outline-none focus:border-accent/40 resize-none font-mono leading-relaxed"
+        <RichEditor
+          key={editingNote.id}
+          content={editingNote.content}
+          onChange={setContent}
           placeholder="Write your note…"
+          autofocus
+          minHeight="320px"
         />
 
         {confirmDelete && (
@@ -141,12 +148,13 @@ export function NotesView({ notes }: NotesViewProps) {
             className={cn(inputCls, "w-full")}
             autoFocus
           />
-          <textarea
-            value={content}
-            onChange={(e) => setContent(e.target.value)}
+          <RichEditor
+            content={content}
+            onChange={setContent}
             placeholder="Content…"
-            rows={3}
-            className={cn(inputCls, "w-full resize-none")}
+            minHeight="72px"
+            toolbar={false}
+            className="border-outline/60"
           />
           <div className="flex gap-2 pt-1">
             <button
@@ -217,7 +225,7 @@ export function NotesView({ notes }: NotesViewProps) {
                 </div>
               </div>
               <p className="text-[12px] text-muted-fg line-clamp-2 leading-relaxed mb-3">
-                {note.content || "Empty note"}
+                {stripHtml(note.content) || "Empty note"}
               </p>
               <p className="text-[11px] text-subtle-fg">
                 {formatDistanceToNow(new Date(note.updatedAt), { addSuffix: true })}
