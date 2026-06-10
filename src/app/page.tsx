@@ -15,6 +15,7 @@ import { FinanceWidget } from "@/components/widgets/finance-widget";
 import { NotesWidget } from "@/components/widgets/notes-widget";
 import { QuickLinksWidget } from "@/components/widgets/quick-links-widget";
 import { PomodoroWidget } from "@/components/widgets/pomodoro-widget";
+import { AnalyticsWidget } from "@/components/widgets/analytics-widget";
 import { getSettings } from "@/lib/services/settings";
 
 const DEFAULT_LAYOUT: LayoutItem[] = [
@@ -28,6 +29,7 @@ const DEFAULT_LAYOUT: LayoutItem[] = [
   { i: "notes",       x: 8, y: 5,  w: 4, h: 3, minW: 2, minH: 2 },
   { i: "quick-links", x: 0, y: 8,  w: 8, h: 2, minW: 2, minH: 1 },
   { i: "pomodoro",    x: 8, y: 8,  w: 4, h: 2, minW: 2, minH: 2 },
+  { i: "analytics",   x: 0, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
 ];
 
 function W({ children, title }: { children: React.ReactNode; title?: string }) {
@@ -73,6 +75,7 @@ export default async function DashboardPage() {
         <div key="notes"><W title="Notes"><NotesWidget /></W></div>
         <div key="quick-links"><W title="Quick Links"><QuickLinksWidget /></W></div>
         <div key="pomodoro"><W title="Pomodoro"><PomodoroWidget /></W></div>
+        <div key="analytics"><W title="Analytics"><AnalyticsWidget /></W></div>
       </DashboardGrid>
     </AppShell>
   );

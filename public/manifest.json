@@ -1,12 +1,13 @@
 {
-  "name": "AshHQ - Personal Command Center",
+  "name": "AshHQ — Personal Command Center",
   "short_name": "AshHQ",
-  "description": "Your personal daily command center",
+  "description": "Your self-hosted personal command center",
   "start_url": "/",
   "display": "standalone",
   "background_color": "#09090b",
   "theme_color": "#09090b",
   "orientation": "portrait-primary",
+  "categories": ["productivity", "lifestyle"],
   "icons": [
     {
       "src": "/icons/icon-192.png",
@@ -23,6 +24,26 @@
       "sizes": "512x512",
       "type": "image/png",
       "purpose": "maskable"
+    }
+  ],
+  "shortcuts": [
+    {
+      "name": "Tasks",
+      "short_name": "Tasks",
+      "url": "/tasks",
+      "description": "View and manage tasks"
+    },
+    {
+      "name": "Journal",
+      "short_name": "Journal",
+      "url": "/journal",
+      "description": "Write today's journal entry"
+    },
+    {
+      "name": "Finance",
+      "short_name": "Finance",
+      "url": "/finance",
+      "description": "Track income and expenses"
     }
   ]
 }
