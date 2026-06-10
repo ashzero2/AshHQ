@@ -74,8 +74,9 @@ export function RichEditor({
   toolbar = true,
 }: RichEditorProps) {
   const editor = useEditor({
+    immediatelyRender: false,
     extensions: [
-      StarterKit.configure({ codeBlock: false }),
+      StarterKit.configure({ codeBlock: false, link: false }),
       Placeholder.configure({ placeholder }),
       Link.configure({
         openOnClick: false,

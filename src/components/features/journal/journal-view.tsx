@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition, useEffect, useCallback } from "react";
+import { useState, useTransition, useEffect, useCallback, useRef } from "react";
 import { format, parseISO } from "date-fns";
 import { toast } from "sonner";
 import { upsertJournalEntry, deleteJournalEntry } from "@/lib/services/journal";
@@ -48,6 +48,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
   const [isPending, startTransition] = useTransition();
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
   const [saveStatus, setSaveStatus] = useState<"idle" | "saving" | "saved">("idle");
+  const isDirtyRef = useRef(false);
 
   const current = entries.find((e) => e.date === selectedDate);
   const [content, setContent] = useState(current?.content ?? "");
@@ -58,6 +59,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
     setContent(e?.content ?? "");
     setMood(e?.mood ?? null);
     setSaveStatus("idle");
+    isDirtyRef.current = false;
   }, [selectedDate, entries]);
 
   const save = useCallback(
@@ -88,6 +90,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
   );
 
   useEffect(() => {
+    if (!isDirtyRef.current) return;
     if (saveStatus === "saving") return;
     const t = setTimeout(() => save(content, mood), 1500);
     return () => clearTimeout(t);
@@ -258,7 +261,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
           {MOODS.map((m) => (
             <button
               key={m.key}
-              onClick={() => setMood(mood === m.key ? null : m.key)}
+              onClick={() => { isDirtyRef.current = true; setMood(mood === m.key ? null : m.key); }}
               title={m.label}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm transition-all ${
                 mood === m.key
@@ -283,7 +286,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
           <RichEditor
             key={selectedDate}
             content={current?.content ?? ""}
-            onChange={setContent}
+            onChange={(html) => { isDirtyRef.current = true; setContent(html); }}
             placeholder={
               selectedDate === todayDate
                 ? "What's on your mind today? Reflect, plan, or just write…"
