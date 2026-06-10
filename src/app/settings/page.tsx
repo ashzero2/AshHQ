@@ -12,9 +12,7 @@ export default async function SettingsPage() {
           <h1 className="text-xl font-bold text-foreground tracking-tight">Settings</h1>
           <p className="text-sm text-muted-fg mt-0.5">Configure your command center</p>
         </div>
-        <div className="max-w-xl">
-          <SettingsView settings={settings} />
-        </div>
+        <SettingsView settings={settings} />
       </div>
     </AppShell>
   );

@@ -26,7 +26,7 @@ export function useKeyboardShortcut(
       if (!mods.ctrlOrMeta && mods.meta !== undefined && mods.meta !== e.metaKey) return;
       if (mods.shift !== undefined && mods.shift !== e.shiftKey) return;
       if (mods.alt !== undefined && mods.alt !== e.altKey) return;
-      if (e.key.toLowerCase() !== key.toLowerCase()) return;
+      if (!e.key || e.key.toLowerCase() !== key.toLowerCase()) return;
       if (preventDefault) e.preventDefault();
       memoCallback();
     };

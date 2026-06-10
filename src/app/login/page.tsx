@@ -37,7 +37,7 @@ export default function LoginPage() {
     setError("");
   };
 
-  const dots = Math.max(4, pin.length + (pin.length < 10 ? 1 : 0));
+  const dots = Math.max(4, pin.length);
 
   return (
     <div
