@@ -114,7 +114,11 @@ export class TelegramChannel implements NotificationChannel {
 
   async setupWebhook(baseUrl: string, config: Record<string, unknown>): Promise<boolean> {
     const { botToken } = this.cfg(config);
-    const res = await api(botToken, "setWebhook", { url: `${baseUrl}/api/channels/telegram/webhook` });
+    const secret = process.env.TELEGRAM_WEBHOOK_SECRET ?? botToken;
+    const res = await api(botToken, "setWebhook", {
+      url: `${baseUrl}/api/channels/telegram/webhook`,
+      secret_token: secret,
+    });
     return res.ok === true;
   }
 }
