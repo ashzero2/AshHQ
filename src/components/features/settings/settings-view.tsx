@@ -375,26 +375,12 @@ export function SettingsView({ settings }: SettingsViewProps) {
               >
                 <Download size={13} /> Export backup
               </a>
-              <label className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-raised border border-outline hover:border-outline-strong text-[12px] font-medium text-muted-fg hover:text-foreground transition-colors cursor-pointer">
+              <span
+                title="Import not yet implemented"
+                className="flex items-center gap-2 px-3.5 py-2 rounded-lg bg-surface-raised border border-outline text-[12px] font-medium text-subtle-fg cursor-not-allowed opacity-50 select-none"
+              >
                 <Upload size={13} /> Import backup
-                <input
-                  type="file"
-                  accept=".json"
-                  className="hidden"
-                  onChange={async (e) => {
-                    const file = e.target.files?.[0];
-                    if (!file) return;
-                    try {
-                      const text = await file.text();
-                      JSON.parse(text);
-                      toast.info("Import coming soon — export works now!");
-                    } catch {
-                      toast.error("Invalid JSON file");
-                    }
-                    e.target.value = "";
-                  }}
-                />
-              </label>
+              </span>
             </div>
             <p className="text-[11px] text-subtle-fg mt-2">Backup includes tasks, events, habits, notes, finance, and journal entries.</p>
 

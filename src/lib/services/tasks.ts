@@ -65,15 +65,12 @@ export async function deleteTask(id: string) {
 
 export async function getTaskStats() {
   await requireAuth();
-  const tasks = await prisma.task.findMany();
   const now = new Date();
-
-  return {
-    total: tasks.length,
-    completed: tasks.filter((t) => t.status === "DONE").length,
-    inProgress: tasks.filter((t) => t.status === "IN_PROGRESS").length,
-    overdue: tasks.filter(
-      (t) => t.dueDate && new Date(t.dueDate) < now && t.status !== "DONE"
-    ).length,
-  };
+  const [total, completed, inProgress, overdue] = await Promise.all([
+    prisma.task.count(),
+    prisma.task.count({ where: { status: "DONE" } }),
+    prisma.task.count({ where: { status: "IN_PROGRESS" } }),
+    prisma.task.count({ where: { status: { not: "DONE" }, dueDate: { lt: now } } }),
+  ]);
+  return { total, completed, inProgress, overdue };
 }

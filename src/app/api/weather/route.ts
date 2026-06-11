@@ -3,6 +3,13 @@ import { cookies } from "next/headers";
 import { prisma } from "@/lib/db";
 import { validateSessionToken } from "@/lib/services/auth";
 
+interface WeatherCache {
+  data: Record<string, unknown>;
+  expiresAt: number;
+}
+const cache = new Map<string, WeatherCache>();
+const CACHE_TTL_MS = 10 * 60 * 1000;
+
 export async function GET() {
   const cookieStore = await cookies();
   const token = cookieStore.get("ashhq-session")?.value ?? "";
@@ -17,6 +24,12 @@ export async function GET() {
     }
 
     const unit = settings.temperatureUnit === "F" ? "imperial" : "metric";
+    const cacheKey = `${settings.weatherCity}:${unit}`;
+    const cached = cache.get(cacheKey);
+    if (cached && Date.now() < cached.expiresAt) {
+      return NextResponse.json(cached.data);
+    }
+
     const url = `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(settings.weatherCity)}&appid=${settings.weatherApiKey}&units=${unit}`;
 
     const res = await fetch(url, { cache: "no-store" });
@@ -30,7 +43,7 @@ export async function GET() {
     }
 
     const data = await res.json();
-    return NextResponse.json({
+    const payload = {
       temp: Math.round(data.main.temp),
       feelsLike: Math.round(data.main.feels_like),
       humidity: data.main.humidity,
@@ -38,7 +51,9 @@ export async function GET() {
       icon: data.weather[0].icon,
       city: data.name,
       unit: settings.temperatureUnit || "C",
-    });
+    };
+    cache.set(cacheKey, { data: payload, expiresAt: Date.now() + CACHE_TTL_MS });
+    return NextResponse.json(payload);
   } catch {
     return NextResponse.json({ error: "Weather service error", code: "server_error" }, { status: 500 });
   }
