@@ -147,7 +147,13 @@ export async function register() {
     console.error("[telegram] bot error:", err);
   });
 
-  // Long polling — no public URL needed
-  bot.start().catch((err) => console.error("[telegram] start error:", err));
-  console.log("[telegram] bot started (long polling)");
+  // Delete any previously registered webhook so long polling gets all updates cleanly.
+  // If a webhook URL is actively needed, set TELEGRAM_WEBHOOK_URL and skip polling.
+  if (process.env.TELEGRAM_WEBHOOK_URL) {
+    console.log("[telegram] TELEGRAM_WEBHOOK_URL set — skipping long polling, webhook mode active");
+  } else {
+    await bot.api.deleteWebhook().catch(() => {});
+    bot.start().catch((err) => console.error("[telegram] start error:", err));
+    console.log("[telegram] bot started (long polling)");
+  }
 }
