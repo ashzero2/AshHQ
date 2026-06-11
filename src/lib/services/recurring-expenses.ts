@@ -6,9 +6,19 @@ import { revalidatePath } from "next/cache";
 import { addDays, addWeeks, addMonths, addYears, setDate } from "date-fns";
 import { RecurringExpenseSchema, type RecurringExpenseInput } from "@/lib/validations";
 import type { RecurringExpense, Transaction } from "@prisma/client";
+import { approveExpenseInternal, snoozeExpenseInternal } from "./recurring-expenses-internal";
+export { approveExpenseInternal, snoozeExpenseInternal };
+
+function applyReminderTime(date: Date, reminderTime: string | null): Date {
+  if (!reminderTime) return date;
+  const [h, m] = reminderTime.split(":").map(Number);
+  const result = new Date(date);
+  result.setHours(h, m, 0, 0);
+  return result;
+}
 
 function computeNextDue(expense: RecurringExpense, from: Date = new Date()): Date {
-  const { frequency, interval, dayOfMonth } = expense;
+  const { frequency, interval, dayOfMonth, reminderTime } = expense;
   let next: Date;
   switch (frequency) {
     case "WEEKLY":  next = addWeeks(from, interval); break;
@@ -19,7 +29,7 @@ function computeNextDue(expense: RecurringExpense, from: Date = new Date()): Dat
   if (dayOfMonth && (frequency === "MONTHLY" || frequency === "YEARLY")) {
     next = setDate(next, Math.min(dayOfMonth, 28));
   }
-  return next;
+  return applyReminderTime(next, reminderTime);
 }
 
 export async function getRecurringExpenses(): Promise<RecurringExpense[]> {
@@ -37,6 +47,10 @@ export async function createRecurringExpense(data: RecurringExpenseInput): Promi
     nextDueAt.setDate(parsed.dayOfMonth);
     if (nextDueAt < new Date()) nextDueAt = addMonths(nextDueAt, 1);
   }
+  if (parsed.reminderTime) {
+    const [h, m] = parsed.reminderTime.split(":").map(Number);
+    nextDueAt.setHours(h, m, 0, 0);
+  }
 
   const expense = await prisma.recurringExpense.create({
     data: {
@@ -46,6 +60,7 @@ export async function createRecurringExpense(data: RecurringExpenseInput): Promi
       frequency: parsed.frequency,
       interval: parsed.interval,
       dayOfMonth: parsed.dayOfMonth ?? null,
+      reminderTime: parsed.reminderTime ?? null,
       autoApprove: parsed.autoApprove,
       nextDueAt,
       status: "ACTIVE",
@@ -69,6 +84,7 @@ export async function updateRecurringExpense(
       ...(data.frequency !== undefined && { frequency: data.frequency }),
       ...(data.interval !== undefined && { interval: data.interval }),
       ...(data.dayOfMonth !== undefined && { dayOfMonth: data.dayOfMonth ?? null }),
+      ...(data.reminderTime !== undefined && { reminderTime: data.reminderTime ?? null }),
       ...(data.autoApprove !== undefined && { autoApprove: data.autoApprove }),
     },
   });
@@ -95,60 +111,44 @@ export async function pauseRecurringExpense(id: string): Promise<RecurringExpens
 
 export async function approveExpense(recurringExpenseId: string): Promise<Transaction> {
   await requireAuth();
-  const exp = await prisma.recurringExpense.findUniqueOrThrow({ where: { id: recurringExpenseId } });
-
-  const tx = await prisma.transaction.create({
-    data: {
-      amount: exp.amount,
-      type: "EXPENSE",
-      category: exp.category,
-      description: exp.description,
-      date: new Date(),
-    },
-  });
-
-  const nextDue = computeNextDue(exp);
-  await prisma.recurringExpense.update({
-    where: { id: recurringExpenseId },
-    data: { lastPaidAt: new Date(), nextDueAt: nextDue },
-  });
-
+  const { transaction } = await approveExpenseInternal(recurringExpenseId);
   revalidatePath("/finance");
-  return tx;
+  return transaction;
 }
 
 export async function snoozeExpense(recurringExpenseId: string, days: number): Promise<void> {
   await requireAuth();
-  const exp = await prisma.recurringExpense.findUniqueOrThrow({ where: { id: recurringExpenseId } });
-  await prisma.recurringExpense.update({
-    where: { id: recurringExpenseId },
-    data: { nextDueAt: addDays(exp.nextDueAt, days) },
-  });
+  await snoozeExpenseInternal(recurringExpenseId, days);
   revalidatePath("/finance");
 }
 
-export async function processRecurringExpensesDue(): Promise<number> {
+export async function processRecurringExpensesDue(): Promise<{ autoRecorded: number; pendingItems: RecurringExpense[] }> {
   const now = new Date();
   const due = await prisma.recurringExpense.findMany({
-    where: { status: "ACTIVE", autoApprove: true, nextDueAt: { lte: now } },
+    where: { status: "ACTIVE", nextDueAt: { lte: now } },
   });
 
-  for (const exp of due) {
-    await prisma.transaction.create({
-      data: {
-        amount: exp.amount,
-        type: "EXPENSE",
-        category: exp.category,
-        description: exp.description,
-        date: new Date(),
-      },
-    });
-    const nextDue = computeNextDue(exp);
-    await prisma.recurringExpense.update({
-      where: { id: exp.id },
-      data: { lastPaidAt: new Date(), nextDueAt: nextDue },
-    });
+  const pending = due.filter((e) => !e.autoApprove);
+  const autoApprove = due.filter((e) => e.autoApprove);
+
+  for (const exp of autoApprove) {
+    const nextDue = computeNextDue(exp, exp.nextDueAt);
+    await prisma.$transaction([
+      prisma.transaction.create({
+        data: {
+          amount: exp.amount,
+          type: "EXPENSE",
+          category: exp.category,
+          description: exp.description,
+          date: new Date(),
+        },
+      }),
+      prisma.recurringExpense.update({
+        where: { id: exp.id },
+        data: { lastPaidAt: new Date(), nextDueAt: nextDue },
+      }),
+    ]);
   }
 
-  return due.length;
+  return { autoRecorded: autoApprove.length, pendingItems: pending };
 }
