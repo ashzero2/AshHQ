@@ -6,6 +6,7 @@ export async function register() {
   const {
     runSchedulerInternal: runScheduler,
     processTaskReminders,
+    checkBudgetAlerts,
     sendMorningSummary,
   } = await import("@/lib/services/scheduler-internal");
   const { approveExpenseInternal, snoozeExpenseInternal } = await import(
@@ -19,7 +20,7 @@ export async function register() {
   // ── Scheduler cron (every 15 min) ───────────────────────────────
   cron.schedule("*/15 * * * *", async () => {
     try {
-      await Promise.all([runScheduler(), processTaskReminders()]);
+      await Promise.all([runScheduler(), processTaskReminders(), checkBudgetAlerts()]);
     } catch (err) {
       console.error("[scheduler] error:", err);
     }
