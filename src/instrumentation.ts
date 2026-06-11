@@ -1,9 +1,13 @@
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
 
-  const { Bot, InlineKeyboard } = await import("grammy");
+  const { Bot } = await import("grammy");
   const { prisma } = await import("@/lib/db");
-  const { runSchedulerInternal: runScheduler } = await import("@/lib/services/scheduler-internal");
+  const {
+    runSchedulerInternal: runScheduler,
+    processTaskReminders,
+    sendMorningSummary,
+  } = await import("@/lib/services/scheduler-internal");
   const { approveExpenseInternal, snoozeExpenseInternal } = await import(
     "@/lib/services/recurring-expenses-internal"
   );
@@ -12,12 +16,22 @@ export async function register() {
   );
   const cron = (await import("node-cron")).default;
 
-  // ── Scheduler cron ──────────────────────────────────────────────
-  cron.schedule("0 * * * *", async () => {
+  // ── Scheduler cron (every 15 min) ───────────────────────────────
+  cron.schedule("*/15 * * * *", async () => {
     try {
-      await runScheduler();
+      await Promise.all([runScheduler(), processTaskReminders()]);
     } catch (err) {
       console.error("[scheduler] error:", err);
+    }
+  });
+
+  // ── Morning summary (default 8am, override with MORNING_SUMMARY_HOUR) ──
+  const summaryHour = Number(process.env.MORNING_SUMMARY_HOUR ?? 8);
+  cron.schedule(`0 ${summaryHour} * * *`, async () => {
+    try {
+      await sendMorningSummary();
+    } catch (err) {
+      console.error("[scheduler] morning summary error:", err);
     }
   });
 
