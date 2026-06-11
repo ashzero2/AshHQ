@@ -16,6 +16,7 @@ interface HabitWithStreak {
   frequency: string;
   currentStreak: number;
   longestStreak: number;
+  todayStr: string;
   logs: { date: string; completed: boolean }[];
 }
 
@@ -69,8 +70,8 @@ export function HabitView({ habits }: HabitViewProps) {
   const [icon, setIcon] = useState("✅");
   const [confirmDelete, setConfirmDelete] = useState<string | null>(null);
 
-  // Compute today in the client's local timezone to avoid UTC server mismatch
-  const today = format(new Date(), "yyyy-MM-dd");
+  // Use the timezone-aware date computed server-side so streak and toggle agree
+  const today = habits[0]?.todayStr ?? format(new Date(), "yyyy-MM-dd");
 
   const handleCreate = (e: React.FormEvent) => {
     e.preventDefault();

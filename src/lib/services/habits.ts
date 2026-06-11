@@ -6,9 +6,18 @@ import { requireAuth } from "@/lib/auth-guard";
 import { CreateHabitSchema } from "@/lib/validations";
 import type { CreateHabitInput } from "@/lib/validations";
 import { format, subDays } from "date-fns";
+import { formatInTimeZone } from "date-fns-tz";
+
+async function getUserTimezone(): Promise<string> {
+  const s = await prisma.settings.findUnique({ where: { id: "singleton" } });
+  return s?.timezone || "UTC";
+}
 
 export async function getHabits() {
   await requireAuth();
+  const tz = await getUserTimezone();
+  const today = formatInTimeZone(new Date(), tz, "yyyy-MM-dd");
+
   const habits = await prisma.habit.findMany({
     include: {
       logs: {
@@ -23,15 +32,14 @@ export async function getHabits() {
     orderBy: { createdAt: "asc" },
   });
 
-  const today = format(new Date(), "yyyy-MM-dd");
-
   return habits.map((habit) => {
     const todayLog = habit.logs.find((l) => l.date === today);
-    const streak = calculateCurrentStreak(habit.logs);
+    const streak = calculateCurrentStreak(habit.logs, today);
     const longestStreak = calculateLongestStreak(habit.logs);
 
     return {
       ...habit,
+      todayStr: today,
       todayCompleted: !!todayLog?.completed,
       currentStreak: streak,
       longestStreak,
@@ -39,19 +47,20 @@ export async function getHabits() {
   });
 }
 
-function calculateCurrentStreak(logs: { date: string; completed: boolean }[]) {
+function calculateCurrentStreak(logs: { date: string; completed: boolean }[], today: string) {
   const completedDates = new Set(
     logs.filter((l) => l.completed).map((l) => l.date)
   );
 
   let streak = 0;
-  let d = new Date();
+  let d = new Date(today + "T12:00:00");
   while (true) {
     const dateStr = format(d, "yyyy-MM-dd");
     if (completedDates.has(dateStr)) {
       streak++;
       d = subDays(d, 1);
-    } else if (dateStr === format(new Date(), "yyyy-MM-dd")) {
+    } else if (dateStr === today) {
+      // today not done yet — don't break the streak, skip to yesterday
       d = subDays(d, 1);
     } else {
       break;
