@@ -1,4 +1,5 @@
 import { prisma } from "@/lib/db";
+import { format, startOfMonth, endOfMonth } from "date-fns";
 
 export interface CommandResult {
   text: string;
@@ -12,9 +13,15 @@ export async function executeCommand(command: string, args: string): Promise<Com
         text:
           "🏠 <b>AshHQ Commands</b>\n\n" +
           "/tasks — pending tasks\n" +
+          "/overdue — overdue tasks\n" +
           "/habits — today's habits\n" +
           "/finance — this month's summary\n" +
-          "/addtask [title] — create a task\n" +
+          "/budget — budget vs actuals\n" +
+          "/upcoming — next 5 calendar events\n" +
+          "/weather — current weather\n" +
+          "/summary — full daily briefing\n" +
+          "/addtask [title] [--low|--high|--urgent] — create a task\n" +
+          "/done [partial name] — mark a task as done\n" +
           "/addnote [title] — create a note\n",
       };
 
@@ -33,10 +40,47 @@ export async function executeCommand(command: string, args: string): Promise<Com
       };
     }
 
+    case "overdue": {
+      const now = new Date();
+      const tasks = await prisma.task.findMany({
+        where: { status: { not: "DONE" }, dueDate: { lt: now } },
+        orderBy: { dueDate: "asc" },
+        take: 10,
+      });
+      return {
+        text:
+          tasks.length === 0
+            ? "✅ No overdue tasks!"
+            : `🔴 <b>Overdue Tasks (${tasks.length})</b>\n\n` +
+              tasks
+                .map((t) => `• ${t.title} — due ${format(new Date(t.dueDate!), "MMM d")}`)
+                .join("\n"),
+      };
+    }
+
+    case "done": {
+      const query = args.trim();
+      if (!query) return { text: "Usage: /done [partial task name]" };
+      const task = await prisma.task.findFirst({
+        where: {
+          status: { not: "DONE" },
+          title: { contains: query },
+        },
+        orderBy: { createdAt: "desc" },
+      });
+      if (!task) return { text: `No pending task matching "${query}"` };
+      await prisma.task.update({
+        where: { id: task.id },
+        data: { status: "DONE", completedAt: new Date() },
+      });
+      return { text: `✅ Done: <b>${task.title}</b>` };
+    }
+
     case "habits": {
       const today = new Date().toISOString().slice(0, 10);
       const habits = await prisma.habit.findMany({
         include: { logs: { where: { date: today } } },
+        orderBy: { createdAt: "asc" },
       });
       const lines = habits.map((h) => {
         const done = h.logs.some((l) => l.completed);
@@ -49,26 +93,154 @@ export async function executeCommand(command: string, args: string): Promise<Com
 
     case "finance": {
       const now = new Date();
-      const start = new Date(now.getFullYear(), now.getMonth(), 1);
-      const end = new Date(now.getFullYear(), now.getMonth() + 1, 0);
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
       const txs = await prisma.transaction.findMany({ where: { date: { gte: start, lte: end } } });
       const income = txs.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
       const expenses = txs.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0);
       return {
         text:
           `💰 <b>Finance This Month</b>\n\n` +
-          `Income: +${income.toFixed(2)}\n` +
-          `Expenses: -${expenses.toFixed(2)}\n` +
-          `Balance: ${(income - expenses).toFixed(2)}`,
+          `Income: +₹${income.toLocaleString("en-IN")}\n` +
+          `Expenses: -₹${expenses.toLocaleString("en-IN")}\n` +
+          `Balance: ₹${(income - expenses).toLocaleString("en-IN")}`,
       };
     }
 
-    case "addtask": {
-      if (!args.trim()) return { text: "Usage: /addtask [title]" };
-      const task = await prisma.task.create({
-        data: { title: args.trim(), priority: "MEDIUM", status: "TODO" },
+    case "budget": {
+      const now = new Date();
+      const month = now.getMonth() + 1;
+      const year = now.getFullYear();
+      const start = startOfMonth(now);
+      const end = endOfMonth(now);
+      const [budgets, txs] = await Promise.all([
+        prisma.budget.findMany({ where: { month, year } }),
+        prisma.transaction.findMany({
+          where: { date: { gte: start, lte: end }, type: "EXPENSE" },
+        }),
+      ]);
+      if (budgets.length === 0) return { text: "No budgets set for this month." };
+      const spent: Record<string, number> = {};
+      txs.forEach((t) => { spent[t.category] = (spent[t.category] || 0) + t.amount; });
+      const lines = budgets.map((b) => {
+        const s = spent[b.category] || 0;
+        const pct = Math.round((s / b.amount) * 100);
+        const bar = pct >= 100 ? "🔴" : pct >= 80 ? "🟡" : "🟢";
+        return `${bar} ${b.category}: ₹${s.toLocaleString("en-IN")} / ₹${b.amount.toLocaleString("en-IN")} (${pct}%)`;
       });
-      return { text: `✅ Task created: <b>${task.title}</b>` };
+      return { text: `📊 <b>Budget This Month</b>\n\n${lines.join("\n")}` };
+    }
+
+    case "upcoming": {
+      const now = new Date();
+      const events = await prisma.calendarEvent.findMany({
+        where: { startTime: { gte: now } },
+        orderBy: { startTime: "asc" },
+        take: 5,
+      });
+      return {
+        text:
+          events.length === 0
+            ? "📆 No upcoming events."
+            : `📆 <b>Upcoming Events</b>\n\n` +
+              events
+                .map((e) => `• ${e.title} — ${format(new Date(e.startTime), "MMM d, h:mm a")}`)
+                .join("\n"),
+      };
+    }
+
+    case "weather": {
+      const settings = await prisma.settings.findUnique({ where: { id: "singleton" } });
+      if (!settings?.weatherApiKey || !settings.weatherCity) {
+        return { text: "⚠️ Weather not configured. Add an API key in Settings." };
+      }
+      try {
+        const unit = settings.temperatureUnit === "F" ? "imperial" : "metric";
+        const res = await fetch(
+          `https://api.openweathermap.org/data/2.5/weather?q=${encodeURIComponent(settings.weatherCity)}&appid=${settings.weatherApiKey}&units=${unit}`
+        );
+        if (!res.ok) return { text: "⚠️ Could not fetch weather." };
+        const data = await res.json() as { main: { temp: number; humidity: number }; weather: { description: string }[] };
+        return {
+          text: `🌤 <b>${settings.weatherCity}</b>\n${Math.round(data.main.temp)}°${settings.temperatureUnit} · ${data.weather[0].description} · ${data.main.humidity}% humidity`,
+        };
+      } catch {
+        return { text: "⚠️ Weather service error." };
+      }
+    }
+
+    case "summary": {
+      const now = new Date();
+      const todayStr = now.toISOString().slice(0, 10);
+      const dayEnd = new Date(now);
+      dayEnd.setHours(23, 59, 59, 999);
+
+      const [overdue, habits, events, dueExpenses] = await Promise.all([
+        prisma.task.findMany({
+          where: { status: { not: "DONE" }, dueDate: { lt: now } },
+          orderBy: { dueDate: "asc" },
+          take: 5,
+        }),
+        prisma.habit.findMany({
+          include: { logs: { where: { date: todayStr } } },
+          orderBy: { createdAt: "asc" },
+        }),
+        prisma.calendarEvent.findMany({
+          where: { startTime: { gte: now, lte: dayEnd } },
+          orderBy: { startTime: "asc" },
+          take: 5,
+        }),
+        prisma.recurringExpense.findMany({
+          where: { status: "ACTIVE", nextDueAt: { lte: dayEnd } },
+          orderBy: { nextDueAt: "asc" },
+        }),
+      ]);
+
+      const lines: string[] = [`📅 <b>Summary — ${format(now, "EEEE, MMM d")}</b>\n`];
+
+      if (overdue.length > 0) {
+        lines.push(`🔴 <b>Overdue (${overdue.length})</b>`);
+        overdue.forEach((t) => lines.push(`  • ${t.title}`));
+        lines.push("");
+      }
+      if (events.length > 0) {
+        lines.push(`📆 <b>Today's Events</b>`);
+        events.forEach((e) => lines.push(`  • ${e.title} — ${format(new Date(e.startTime), "h:mm a")}`));
+        lines.push("");
+      }
+      if (habits.length > 0) {
+        const doneCount = habits.filter((h) => h.logs.some((l) => l.completed)).length;
+        lines.push(`🎯 <b>Habits (${doneCount}/${habits.length})</b>`);
+        habits.forEach((h) => lines.push(`  ${h.logs.some((l) => l.completed) ? "✅" : "⬜"} ${h.icon} ${h.name}`));
+        lines.push("");
+      }
+      if (dueExpenses.length > 0) {
+        lines.push(`💸 <b>Due Today</b>`);
+        dueExpenses.forEach((e) => lines.push(`  • ${e.description} — ₹${e.amount.toLocaleString("en-IN")}`));
+      }
+      if (lines.length === 1) lines.push("All clear! Nothing pending today. ✨");
+
+      return { text: lines.join("\n") };
+    }
+
+    case "addtask": {
+      if (!args.trim()) return { text: "Usage: /addtask [title] [--low|--high|--urgent]" };
+
+      // Parse optional priority flag: --low, --high, --urgent
+      const priorityMatch = args.match(/--(\w+)$/i);
+      const priorityMap: Record<string, string> = {
+        low: "LOW", medium: "MEDIUM", high: "HIGH", urgent: "URGENT",
+      };
+      const flagKey = priorityMatch?.[1]?.toLowerCase() ?? "";
+      const priority = priorityMap[flagKey] ?? "MEDIUM";
+      const title = args.replace(/--\w+$/, "").trim();
+
+      if (!title) return { text: "Usage: /addtask [title] [--low|--high|--urgent]" };
+
+      const task = await prisma.task.create({
+        data: { title, priority, status: "TODO" },
+      });
+      return { text: `✅ Task created: <b>${task.title}</b> [${task.priority}]` };
     }
 
     case "addnote": {

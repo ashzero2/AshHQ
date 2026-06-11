@@ -85,6 +85,31 @@ export async function register() {
     await ctx.reply(result.text, { parse_mode: "HTML" });
   });
 
+  bot.command("overdue", async (ctx) => {
+    const result = await executeCommand("overdue", "");
+    await ctx.reply(result.text, { parse_mode: "HTML" });
+  });
+
+  bot.command("upcoming", async (ctx) => {
+    const result = await executeCommand("upcoming", "");
+    await ctx.reply(result.text, { parse_mode: "HTML" });
+  });
+
+  bot.command("budget", async (ctx) => {
+    const result = await executeCommand("budget", "");
+    await ctx.reply(result.text, { parse_mode: "HTML" });
+  });
+
+  bot.command("weather", async (ctx) => {
+    const result = await executeCommand("weather", "");
+    await ctx.reply(result.text, { parse_mode: "HTML" });
+  });
+
+  bot.command("summary", async (ctx) => {
+    const result = await executeCommand("summary", "");
+    await ctx.reply(result.text, { parse_mode: "HTML" });
+  });
+
   bot.on("message:text", async (ctx) => {
     const parsed = parseCommand(ctx.message.text);
     if (!parsed) return;
