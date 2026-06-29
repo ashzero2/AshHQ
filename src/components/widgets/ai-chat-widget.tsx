@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Send, Sparkles } from "lucide-react";
+import { MessageSquareText, Send } from "lucide-react";
 
 interface Message {
   role: "user" | "assistant";
@@ -51,7 +51,7 @@ export function AiChatWidget() {
     } catch {
       setMessages([
         ...newMessages,
-        { role: "assistant", content: "Couldn't connect. Check your AI settings." },
+        { role: "assistant", content: "Couldn't connect. Check assistant settings." },
       ]);
     } finally {
       setIsLoading(false);
@@ -62,8 +62,8 @@ export function AiChatWidget() {
     <div className="flex flex-col h-full">
       {messages.length === 0 ? (
         <div className="flex-1 flex flex-col items-center justify-center gap-2">
-          <Sparkles size={18} className="text-accent" />
-          <p className="text-[12px] text-muted-fg">Ask me anything</p>
+          <MessageSquareText size={18} className="text-accent" />
+          <p className="text-[12px] text-muted-fg">Ask about this workspace</p>
         </div>
       ) : (
         <div ref={scrollRef} className="flex-1 overflow-y-auto space-y-2 mb-2 min-h-0 pr-0.5">
@@ -75,7 +75,7 @@ export function AiChatWidget() {
               <p
                 className={`rounded-lg px-2.5 py-1.5 max-w-[88%] leading-relaxed ${
                   msg.role === "user"
-                    ? "bg-accent/15 text-accent-light"
+                    ? "bg-accent text-background"
                     : "bg-surface-raised text-muted-fg"
                 }`}
               >
@@ -95,7 +95,7 @@ export function AiChatWidget() {
         <input
           value={input}
           onChange={(e) => setInput(e.target.value)}
-          placeholder="Type a message..."
+          placeholder="Ask a question..."
           className="flex-1 bg-surface-raised border border-outline rounded-lg px-3 py-1.5 text-[12px] text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/50 transition-colors"
         />
         <button

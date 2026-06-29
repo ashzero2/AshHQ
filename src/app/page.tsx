@@ -1,11 +1,12 @@
 export const dynamic = "force-dynamic";
 import { Suspense } from "react";
+import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
 import { WidgetWrapper } from "@/components/dashboard/widget-wrapper";
-import { DashboardGrid, type LayoutItem } from "@/components/dashboard/dashboard-grid";
+import { ResponsiveGrid } from "@/components/dashboard/responsive-grid";
+import { WorkbenchLayout } from "@/components/dashboard/workbench-layout";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { WidgetSkeleton } from "@/components/shared/widget-skeleton";
-import { GreetingWidget } from "@/components/widgets/greeting-widget";
 import { ClockWidget } from "@/components/widgets/clock-widget";
 import { WeatherWidget } from "@/components/widgets/weather-widget";
 import { TasksWidget } from "@/components/widgets/tasks-widget";
@@ -16,21 +17,11 @@ import { NotesWidget } from "@/components/widgets/notes-widget";
 import { QuickLinksWidget } from "@/components/widgets/quick-links-widget";
 import { PomodoroWidget } from "@/components/widgets/pomodoro-widget";
 import { AnalyticsWidget } from "@/components/widgets/analytics-widget";
-import { getSettings } from "@/lib/services/settings";
-
-const DEFAULT_LAYOUT: LayoutItem[] = [
-  { i: "greeting",    x: 0, y: 0,  w: 8, h: 2, minW: 4, minH: 1 },
-  { i: "clock",       x: 8, y: 0,  w: 4, h: 2, minW: 2, minH: 1 },
-  { i: "weather",     x: 0, y: 2,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "tasks",       x: 4, y: 2,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "calendar",    x: 8, y: 2,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "habits",      x: 0, y: 5,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "finance",     x: 4, y: 5,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "notes",       x: 8, y: 5,  w: 4, h: 3, minW: 2, minH: 2 },
-  { i: "quick-links", x: 0, y: 8,  w: 8, h: 2, minW: 2, minH: 1 },
-  { i: "pomodoro",    x: 8, y: 8,  w: 4, h: 2, minW: 2, minH: 2 },
-  { i: "analytics",   x: 0, y: 10, w: 4, h: 3, minW: 3, minH: 2 },
-];
+import { getTaskStats } from "@/lib/services/tasks";
+import { getUpcomingEvents } from "@/lib/services/calendar";
+import { getHabits } from "@/lib/services/habits";
+import { getFinanceSummary } from "@/lib/services/finance";
+import { formatCurrency } from "@/lib/utils";
 
 function W({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
@@ -44,39 +35,100 @@ function W({ children, title }: { children: React.ReactNode; title?: string }) {
   );
 }
 
+function Stat({ label, value, sub }: { label: string; value: string; sub?: string }) {
+  return (
+    <div className="min-w-0 border-l border-outline/70 pl-4 first:border-l-0 first:pl-0">
+      <p className="text-[10px] font-semibold uppercase tracking-[0.14em] text-subtle-fg">{label}</p>
+      <p className="mt-1 truncate text-lg font-semibold tracking-tight text-foreground tabular-nums">{value}</p>
+      {sub && <p className="mt-0.5 truncate text-[11px] text-muted-fg">{sub}</p>}
+    </div>
+  );
+}
+
 export default async function DashboardPage() {
-  const settings = await getSettings();
+  const now = new Date();
+  const [taskStats, events, habits, finance] = await Promise.all([
+    getTaskStats(),
+    getUpcomingEvents(4),
+    getHabits(),
+    getFinanceSummary(now.getMonth() + 1, now.getFullYear()),
+  ]);
 
-  let savedLayout: LayoutItem[] = DEFAULT_LAYOUT;
-  try {
-    const parsed = JSON.parse(settings.dashboardLayout || "{}");
-    if (Array.isArray(parsed) && parsed.length > 0) {
-      savedLayout = parsed;
-    }
-  } catch { /* use default */ }
-
-  // Merge: keep saved positions but add any new widgets from DEFAULT_LAYOUT
-  const savedIds = new Set(savedLayout.map((l) => l.i));
-  const merged = [
-    ...savedLayout,
-    ...DEFAULT_LAYOUT.filter((d) => !savedIds.has(d.i)),
-  ];
+  const completedHabits = habits.filter((habit) => habit.todayCompleted).length;
+  const openTasks = Math.max(taskStats.total - taskStats.completed, 0);
 
   return (
     <AppShell>
-      <DashboardGrid savedLayout={merged}>
-        <div key="greeting"><W><GreetingWidget /></W></div>
-        <div key="clock"><W><ClockWidget /></W></div>
-        <div key="weather"><W title="Weather"><WeatherWidget /></W></div>
-        <div key="tasks"><W title="Tasks"><TasksWidget /></W></div>
-        <div key="calendar"><W title="Calendar"><CalendarWidget /></W></div>
-        <div key="habits"><W title="Habits"><HabitsWidget /></W></div>
-        <div key="finance"><W title="Finance"><FinanceWidget /></W></div>
-        <div key="notes"><W title="Notes"><NotesWidget /></W></div>
-        <div key="quick-links"><W title="Quick Links"><QuickLinksWidget /></W></div>
-        <div key="pomodoro"><W title="Pomodoro"><PomodoroWidget /></W></div>
-        <div key="analytics"><W title="Analytics"><AnalyticsWidget /></W></div>
-      </DashboardGrid>
+      <div className="space-y-4">
+        <section className="grid gap-5 border-b border-outline/70 pb-5 lg:grid-cols-[minmax(0,1fr)_minmax(520px,0.85fr)] lg:items-end">
+          <div>
+            <p className="text-[11px] font-semibold uppercase tracking-[0.16em] text-subtle-fg">
+              {format(now, "EEEE, MMM d")}
+            </p>
+            <h1 className="mt-2 text-3xl font-semibold tracking-tight text-foreground text-balance">
+              Today
+            </h1>
+            <p className="mt-2 max-w-xl text-sm leading-6 text-muted-fg">
+              Tasks, schedule, habits, and spending in one working view.
+            </p>
+          </div>
+          <div className="grid grid-cols-2 gap-4 sm:grid-cols-4">
+            <Stat label="Open" value={String(openTasks)} sub={`${taskStats.overdue} overdue`} />
+            <Stat label="Events" value={String(events.length)} sub="Next up" />
+            <Stat label="Habits" value={`${completedHabits}/${habits.length}`} sub="Done today" />
+            <Stat label="Balance" value={formatCurrency(finance.balance)} sub="This month" />
+          </div>
+        </section>
+
+        <WorkbenchLayout
+          main={
+            <>
+              <ResponsiveGrid columns={2}>
+                <div className="min-h-[260px]">
+                  <W title="Tasks"><TasksWidget /></W>
+                </div>
+                <div className="min-h-[260px]">
+                  <W title="Calendar"><CalendarWidget /></W>
+                </div>
+              </ResponsiveGrid>
+
+              <ResponsiveGrid columns={3}>
+                <div className="min-h-[220px]">
+                  <W title="Finance"><FinanceWidget /></W>
+                </div>
+                <div className="min-h-[220px]">
+                  <W title="Notes"><NotesWidget /></W>
+                </div>
+                <div className="min-h-[220px]">
+                  <W title="Quick Links"><QuickLinksWidget /></W>
+                </div>
+              </ResponsiveGrid>
+
+              <ResponsiveGrid columns={2}>
+                <div className="min-h-[260px]">
+                  <W title="Focus"><PomodoroWidget /></W>
+                </div>
+                <div className="min-h-[260px]">
+                  <W title="Review"><AnalyticsWidget /></W>
+                </div>
+              </ResponsiveGrid>
+            </>
+          }
+          rail={
+            <>
+            <div className="min-h-[150px]">
+              <W><ClockWidget /></W>
+            </div>
+            <div className="min-h-[220px]">
+              <W title="Weather"><WeatherWidget /></W>
+            </div>
+            <div className="min-h-[260px] sm:col-span-2 lg:col-span-1">
+              <W title="Habits"><HabitsWidget /></W>
+            </div>
+            </>
+          }
+        />
+      </div>
     </AppShell>
   );
 }

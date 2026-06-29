@@ -83,10 +83,10 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
   return (
     <div className="h-full flex flex-col">
       {/* Header */}
-      <div className="flex items-center justify-between mb-6 flex-shrink-0">
+      <div className="flex items-center justify-between mb-6 flex-shrink-0 border-b border-outline/70 pb-5">
         <div>
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Links</h1>
-          <p className="text-sm text-muted-fg mt-0.5">{links.length} bookmark{links.length !== 1 ? "s" : ""}</p>
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Links</h1>
+          <p className="text-sm text-muted-fg mt-1">{links.length} bookmark{links.length !== 1 ? "s" : ""} saved.</p>
         </div>
         <button
           onClick={() => setShowForm(!showForm)}
@@ -98,7 +98,7 @@ export function LinksView({ links: initialLinks }: LinksViewProps) {
 
       {/* Add form */}
       {showForm && (
-        <div className="bg-surface border border-outline rounded-xl p-4 mb-5 flex-shrink-0 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+        <div className="bg-surface border border-outline/80 rounded-lg p-4 mb-5 flex-shrink-0">
           <div className="grid grid-cols-1 sm:grid-cols-[1fr_2fr_1fr] gap-3 mb-3">
             <input
               autoFocus

@@ -19,9 +19,9 @@ export default async function AnalyticsPage() {
   return (
     <AppShell>
       <div className="h-full flex flex-col">
-        <div className="mb-6 flex-shrink-0">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Analytics</h1>
-          <p className="text-sm text-muted-fg mt-0.5">Your productivity at a glance</p>
+        <div className="mb-6 flex-shrink-0 border-b border-outline/70 pb-5">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Review</h1>
+          <p className="text-sm text-muted-fg mt-1">Task, habit, finance, and focus trends.</p>
         </div>
         <AnalyticsView habits={habits} tasks={tasks} finance={finance} pomodoro={pomodoro} />
       </div>

@@ -1,7 +1,8 @@
 "use client";
 
 import { useState, useRef, useEffect } from "react";
-import { Sparkles, X, Send, RotateCcw } from "lucide-react";
+import { usePathname } from "next/navigation";
+import { MessageSquareText, X, Send, RotateCcw } from "lucide-react";
 import ReactMarkdown from "react-markdown";
 
 interface Message {
@@ -10,6 +11,7 @@ interface Message {
 }
 
 export function AiChatFab() {
+  const pathname = usePathname();
   const [open, setOpen] = useState(false);
   const [messages, setMessages] = useState<Message[]>([]);
   const [input, setInput] = useState("");
@@ -65,21 +67,24 @@ export function AiChatFab() {
         setMessages([...newMessages, { role: "assistant", content }]);
       }
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Couldn't connect. Check your AI settings." }]);
+      setMessages([...newMessages, { role: "assistant", content: "Couldn't connect. Check assistant settings." }]);
     } finally {
       setIsLoading(false);
     }
   };
+
+  if (pathname === "/login") return null;
 
   return (
     <>
       {/* FAB */}
       <button
         onClick={() => setOpen(true)}
-        className="fixed bottom-6 right-6 z-40 w-12 h-12 rounded-full bg-accent hover:bg-accent-light text-background shadow-lg hover:shadow-xl transition-all hover:scale-105 flex items-center justify-center"
-        aria-label="Open AI assistant"
+        className="fixed bottom-5 right-5 z-40 inline-flex h-10 items-center gap-2 rounded-md border border-outline-strong bg-elevated px-3 text-[12px] font-medium text-foreground transition-all hover:border-accent/60 hover:text-accent"
+        aria-label="Open assistant"
       >
-        <Sparkles size={20} />
+        <MessageSquareText size={15} />
+        Ask
       </button>
 
       {/* Backdrop */}
@@ -92,16 +97,16 @@ export function AiChatFab() {
 
       {/* Modal */}
       {open && (
-        <div className="fixed bottom-6 right-6 z-50 w-[420px] max-w-[calc(100vw-3rem)] h-[560px] max-h-[calc(100vh-5rem)] bg-surface border border-outline rounded-2xl shadow-2xl flex flex-col overflow-hidden">
+        <div className="fixed bottom-5 right-5 z-50 flex h-[560px] max-h-[calc(100vh-5rem)] w-[420px] max-w-[calc(100vw-2.5rem)] animate-ash-soft-scale flex-col overflow-hidden rounded-lg border border-outline bg-surface">
           {/* Header */}
           <div className="flex items-center justify-between px-4 py-3 border-b border-outline flex-shrink-0">
             <div className="flex items-center gap-2">
-              <div className="w-7 h-7 rounded-lg bg-accent/15 flex items-center justify-center">
-                <Sparkles size={14} className="text-accent" />
+              <div className="w-7 h-7 rounded-md bg-surface-raised border border-outline flex items-center justify-center">
+                <MessageSquareText size={14} className="text-accent" />
               </div>
               <div>
-                <p className="text-sm font-semibold text-foreground leading-none">AshHQ AI</p>
-                <p className="text-[10px] text-muted-fg mt-0.5">Aware of your data</p>
+                <p className="text-sm font-semibold text-foreground leading-none">Ask AshHQ</p>
+                <p className="text-[10px] text-muted-fg mt-0.5">Tasks, calendar, habits, finance</p>
               </div>
             </div>
             <div className="flex items-center gap-1">
@@ -127,19 +132,19 @@ export function AiChatFab() {
           <div ref={scrollRef} className="flex-1 overflow-y-auto p-4 space-y-3 min-h-0">
             {messages.length === 0 ? (
               <div className="h-full flex flex-col items-center justify-center gap-3 text-center">
-                <div className="w-12 h-12 rounded-2xl bg-accent/10 flex items-center justify-center">
-                  <Sparkles size={22} className="text-accent" />
+                <div className="w-11 h-11 rounded-md bg-surface-raised border border-outline flex items-center justify-center">
+                  <MessageSquareText size={20} className="text-accent" />
                 </div>
                 <div>
-                  <p className="text-sm font-medium text-foreground">Ask me anything</p>
-                  <p className="text-[12px] text-muted-fg mt-1">I know your tasks, events, habits,<br />finances, and notes.</p>
+                  <p className="text-sm font-medium text-foreground">Ask about the workspace</p>
+                  <p className="text-[12px] text-muted-fg mt-1">Use it for quick summaries and lookups.</p>
                 </div>
                 <div className="flex flex-col gap-1.5 w-full max-w-[280px] mt-1">
-                  {["What's on my schedule today?", "How are my habits going?", "Summarize my finances this month"].map((suggestion) => (
+                  {["What is on my schedule today?", "Which habits are still open?", "Summarize this month's spending"].map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => { setInput(suggestion); inputRef.current?.focus(); }}
-                      className="text-left text-[11px] text-muted-fg hover:text-foreground bg-surface-raised hover:bg-elevated border border-outline hover:border-outline-strong rounded-lg px-3 py-2 transition-colors"
+                      className="text-left text-[11px] text-muted-fg hover:text-foreground bg-surface-raised hover:bg-elevated border border-outline hover:border-outline-strong rounded-md px-3 py-2 transition-colors"
                     >
                       {suggestion}
                     </button>
@@ -150,10 +155,10 @@ export function AiChatFab() {
               messages.map((msg, i) => (
                 <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
                   <div
-                    className={`max-w-[85%] rounded-2xl px-3.5 py-2.5 text-[13px] leading-relaxed ${
+                    className={`max-w-[85%] rounded-lg px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       msg.role === "user"
-                        ? "bg-accent text-background rounded-br-sm"
-                        : "bg-surface-raised text-foreground rounded-bl-sm"
+                        ? "bg-accent text-background"
+                        : "bg-surface-raised text-foreground"
                     }`}
                   >
                     {msg.role === "assistant" && !msg.content && isLoading ? (
@@ -182,12 +187,12 @@ export function AiChatFab() {
               value={input}
               onChange={(e) => setInput(e.target.value)}
               placeholder="Ask about your tasks, habits, finance…"
-              className="flex-1 bg-surface-raised border border-outline rounded-xl px-3.5 py-2 text-[13px] text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/50 transition-colors"
+              className="flex-1 bg-surface-raised border border-outline rounded-md px-3.5 py-2 text-[13px] text-foreground placeholder:text-subtle-fg focus:outline-none focus:border-accent/50 transition-colors"
             />
             <button
               type="submit"
               disabled={!input.trim() || isLoading}
-              className="w-9 h-9 rounded-xl bg-accent hover:bg-accent-light text-background disabled:bg-surface-raised disabled:text-subtle-fg transition-all flex items-center justify-center flex-shrink-0"
+              className="w-9 h-9 rounded-md bg-accent hover:bg-accent-light text-background disabled:bg-surface-raised disabled:text-subtle-fg transition-all flex items-center justify-center flex-shrink-0"
             >
               <Send size={14} />
             </button>

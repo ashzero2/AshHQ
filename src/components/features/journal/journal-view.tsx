@@ -226,13 +226,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
       <div className="flex-1 flex flex-col min-h-0 min-w-0">
         {/* Date header */}
         <div className="flex items-end gap-4 mb-5 flex-shrink-0">
-          <div
-            className="w-14 h-14 rounded-2xl flex items-center justify-center flex-shrink-0 shadow-[0_4px_16px_rgba(232,192,108,0.12)]"
-            style={{
-              background: "linear-gradient(135deg, rgba(232,192,108,0.12) 0%, rgba(251,146,60,0.06) 100%)",
-              border: "1px solid rgba(232,192,108,0.18)",
-            }}
-          >
+          <div className="w-14 h-14 rounded-lg border border-outline bg-surface-raised flex items-center justify-center flex-shrink-0">
             <span className="text-2xl font-bold text-accent leading-none font-mono">
               {selectedDate === todayDate ? todayDay : format(parseISO(selectedDate), "d")}
             </span>
@@ -265,7 +259,7 @@ export function JournalView({ entries: initialEntries, todayDate }: JournalViewP
               title={m.label}
               className={`flex items-center gap-1.5 px-2.5 py-1 rounded-lg text-sm transition-all ${
                 mood === m.key
-                  ? "bg-accent/15 border border-accent/35 shadow-[0_0_8px_rgba(232,192,108,0.12)]"
+                  ? "bg-accent/15 border border-accent/35"
                   : "bg-surface-raised border border-outline hover:border-outline-strong"
               }`}
             >

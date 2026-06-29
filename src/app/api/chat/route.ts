@@ -59,7 +59,7 @@ async function buildContextPrompt(): Promise<string> {
     ? notes.map((n) => `  - "${n.title}"${n.pinned ? " 📌" : ""}${n.content ? `: ${n.content.slice(0, 80)}${n.content.length > 80 ? "…" : ""}` : ""}`).join("\n")
     : "  (none)";
 
-  return `You are AshHQ — a personal AI assistant with full access to the user's live data. Be helpful, concise, and actionable. Use markdown for formatting.
+  return `You are AshHQ — a private workspace assistant with access to the user's live data. Be helpful, concise, and actionable. Use markdown for formatting.
 
 TODAY: ${format(today, "EEEE, MMMM d, yyyy")}
 

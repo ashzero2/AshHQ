@@ -1,70 +1,92 @@
 "use client";
 
-import { useState, useCallback, useRef } from "react";
-import { Responsive, WidthProvider } from "react-grid-layout/legacy";
-import type { LayoutItem } from "react-grid-layout/legacy";
-import { saveDashboardLayout } from "@/lib/services/settings";
-import "react-grid-layout/css/styles.css";
-import "react-resizable/css/styles.css";
+import { Children, isValidElement, useEffect, useState, type ReactNode } from "react";
+import { cn } from "@/lib/utils";
 
-export type { LayoutItem };
-
-const ResponsiveGridLayout = WidthProvider(Responsive);
-
-interface DashboardGridProps {
-  children: React.ReactNode;
-  savedLayout: LayoutItem[];
+export interface LayoutItem {
+  i: string;
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  minW?: number;
+  minH?: number;
 }
 
-const BREAKPOINTS = { lg: 1200, md: 768, sm: 0 };
-const COLS = { lg: 12, md: 6, sm: 2 };
+interface DashboardGridProps {
+  children: ReactNode;
+  savedLayout?: LayoutItem[];
+}
 
-type Layouts = { lg: LayoutItem[]; md: LayoutItem[]; sm: LayoutItem[] };
+const DESKTOP_SPANS: Record<string, number> = {
+  greeting: 6,
+  clock: 3,
+  weather: 3,
+  tasks: 4,
+  calendar: 4,
+  habits: 4,
+  finance: 4,
+  notes: 4,
+  "quick-links": 4,
+  pomodoro: 4,
+  analytics: 4,
+};
 
-export function DashboardGrid({ children, savedLayout }: DashboardGridProps) {
-  const [layouts, setLayouts] = useState<Layouts>({
-    lg: savedLayout,
-    md: savedLayout.map((item) => ({
-      ...item,
-      x: item.x % 6,
-      w: Math.min(item.w, 6),
-    })),
-    sm: savedLayout.map((item) => ({ ...item, x: 0, w: 2 })),
-  });
+const TABLET_SPANS: Record<string, number> = {
+  greeting: 6,
+  clock: 3,
+  weather: 3,
+  tasks: 3,
+  calendar: 3,
+  habits: 3,
+  finance: 3,
+  notes: 3,
+  "quick-links": 3,
+  pomodoro: 3,
+  analytics: 3,
+};
 
-  const saveTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+function useDashboardColumns() {
+  const [columns, setColumns] = useState(1);
 
-  const handleLayoutChange = useCallback(
-    (_layout: readonly LayoutItem[], allLayouts: Partial<Record<string, readonly LayoutItem[]>>) => {
-      const lg = allLayouts.lg;
-      if (lg) {
-        const lgMutable = [...lg] as LayoutItem[];
-        setLayouts((prev) => ({ ...prev, lg: lgMutable }));
-        if (saveTimer.current) clearTimeout(saveTimer.current);
-        saveTimer.current = setTimeout(() => {
-          saveDashboardLayout(lgMutable).catch(() => {});
-        }, 800);
-      }
-    },
-    []
-  );
+  useEffect(() => {
+    const update = () => {
+      if (window.innerWidth >= 1024) setColumns(12);
+      else if (window.innerWidth >= 768) setColumns(6);
+      else setColumns(1);
+    };
+
+    update();
+    window.addEventListener("resize", update);
+    return () => window.removeEventListener("resize", update);
+  }, []);
+
+  return columns;
+}
+
+export function DashboardGrid({ children }: DashboardGridProps) {
+  const columns = useDashboardColumns();
+  const spans = columns === 12 ? DESKTOP_SPANS : columns === 6 ? TABLET_SPANS : {};
 
   return (
-    <ResponsiveGridLayout
-      className="layout"
-      layouts={layouts}
-      breakpoints={BREAKPOINTS}
-      cols={COLS}
-      rowHeight={120}
-      margin={[16, 16]}
-      containerPadding={[0, 0]}
-      draggableHandle=".drag-handle"
-      isDraggable
-      isResizable
-      resizeHandles={["se"]}
-      onLayoutChange={handleLayoutChange}
+    <div
+      className="grid gap-4"
+      style={{ gridTemplateColumns: `repeat(${columns}, minmax(0, 1fr))` }}
     >
-      {children}
-    </ResponsiveGridLayout>
+      {Children.map(children, (child) => {
+        if (!isValidElement(child)) return child;
+        const rawKey = child.key == null ? "" : String(child.key);
+        const key = rawKey.replace(/^\.\$/, "").replace(/^\./, "").replace(/^\$/, "");
+        const span = spans[key] ?? columns;
+        return (
+          <div
+            className={cn("min-w-0", `dashboard-item-${key}`)}
+            style={{ gridColumn: `span ${Math.min(span, columns)} / span ${Math.min(span, columns)}` }}
+          >
+            {child}
+          </div>
+        );
+      })}
+    </div>
   );
 }

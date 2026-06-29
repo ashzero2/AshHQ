@@ -40,18 +40,12 @@ export default function LoginPage() {
   const dots = Math.max(4, pin.length);
 
   return (
-    <div
-      className="min-h-screen flex items-center justify-center p-4"
-      style={{
-        background: "radial-gradient(ellipse at 50% 40%, #18161a 0%, #0b0b0f 60%)",
-      }}
-    >
+    <div className="min-h-screen flex items-center justify-center bg-background p-4">
       <div className="w-full max-w-xs">
         {/* Logo */}
         <div className="text-center mb-10">
           <div
-            className="inline-flex items-center justify-center w-14 h-14 rounded-2xl text-2xl font-bold text-background mb-4 shadow-[0_4px_24px_rgba(232,192,108,0.3)]"
-            style={{ background: "linear-gradient(135deg, #e8c06c 0%, #fb923c 100%)" }}
+            className="inline-flex items-center justify-center w-14 h-14 rounded-lg border border-outline-strong bg-elevated text-2xl font-semibold text-accent mb-4"
           >
             A
           </div>
@@ -66,7 +60,7 @@ export default function LoginPage() {
               key={i}
               className={`w-3 h-3 rounded-full transition-all duration-200 ${
                 i < pin.length
-                  ? "bg-accent scale-110 shadow-[0_0_8px_rgba(232,192,108,0.6)]"
+                  ? "bg-accent scale-110"
                   : "bg-surface-raised border border-outline"
               }`}
             />

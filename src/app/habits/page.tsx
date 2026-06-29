@@ -8,9 +8,9 @@ export default async function HabitsPage() {
   return (
     <AppShell>
       <div className="h-full flex flex-col">
-        <div className="mb-6 flex-shrink-0">
-          <h1 className="text-xl font-bold text-foreground tracking-tight">Habits</h1>
-          <p className="text-sm text-muted-fg mt-0.5">Build and track your daily routines</p>
+        <div className="mb-6 flex-shrink-0 border-b border-outline/70 pb-5">
+          <h1 className="text-2xl font-semibold text-foreground tracking-tight">Habits</h1>
+          <p className="text-sm text-muted-fg mt-1">Today&apos;s routine status and streak history.</p>
         </div>
         <HabitView habits={habits} />
       </div>

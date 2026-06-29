@@ -16,7 +16,7 @@ const inputCls =
 
 function Card({ title, description, children }: { title: string; description?: string; children: React.ReactNode }) {
   return (
-    <div className="bg-surface border border-outline rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
+    <div className="bg-surface border border-outline/80 rounded-lg p-5">
       <div className="mb-4">
         <h3 className="text-sm font-semibold text-foreground">{title}</h3>
         {description && <p className="text-[12px] text-muted-fg mt-0.5">{description}</p>}
@@ -202,7 +202,7 @@ export function SettingsView({ settings }: SettingsViewProps) {
             </Field>
           </Card>
 
-          <Card title="AI Provider" description="Configure the AI model for chat and assistance">
+          <Card title="Assistant Provider" description="Configure the model used by Ask AshHQ">
             <Field label="Provider">
               <ToggleGroup
                 options={[
@@ -216,7 +216,7 @@ export function SettingsView({ settings }: SettingsViewProps) {
             </Field>
             {aiProvider === "OPENAI" && (
               <>
-                <Field label="OpenAI API Key">
+                <Field label="OpenAI API key">
                   <input type="password" value={openaiKey} onChange={(e) => setOpenaiKey(e.target.value)} placeholder="sk-…" autoComplete="off" className={inputCls} />
                 </Field>
                 <Field label="Model">
@@ -226,7 +226,7 @@ export function SettingsView({ settings }: SettingsViewProps) {
             )}
             {aiProvider === "GEMINI" && (
               <>
-                <Field label="Gemini API Key">
+                <Field label="Gemini API key">
                   <input type="password" value={geminiKey} onChange={(e) => setGeminiKey(e.target.value)} placeholder="Get a free key at aistudio.google.com" autoComplete="off" className={inputCls} />
                 </Field>
                 <Field label="Model">
@@ -288,7 +288,7 @@ export function SettingsView({ settings }: SettingsViewProps) {
             </div>
           </Card>
 
-          <Card title="Telegram" description="Get notified and query your data via Telegram bot">
+          <Card title="Telegram" description="Notifications and workspace queries through Telegram">
             <Field label="Bot Token">
               <input
                 type="password"
