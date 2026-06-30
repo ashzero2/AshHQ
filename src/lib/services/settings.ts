@@ -21,6 +21,7 @@ export async function saveDashboardLayout(layout: object) {
     where: { id: "singleton" },
     data: { dashboardLayout: JSON.stringify(layout) },
   });
+  revalidatePath("/");
 }
 
 export async function updateSettings(data: UpdateSettingsInput) {

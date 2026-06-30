@@ -2,9 +2,6 @@ export const dynamic = "force-dynamic";
 import { Suspense } from "react";
 import { format } from "date-fns";
 import { AppShell } from "@/components/layout/app-shell";
-import { WidgetWrapper } from "@/components/dashboard/widget-wrapper";
-import { ResponsiveGrid } from "@/components/dashboard/responsive-grid";
-import { WorkbenchLayout } from "@/components/dashboard/workbench-layout";
 import { ErrorBoundary } from "@/components/shared/error-boundary";
 import { WidgetSkeleton } from "@/components/shared/widget-skeleton";
 import { ClockWidget } from "@/components/widgets/clock-widget";
@@ -20,18 +17,20 @@ import { AnalyticsWidget } from "@/components/widgets/analytics-widget";
 import { getTaskStats } from "@/lib/services/tasks";
 import { getUpcomingEvents } from "@/lib/services/calendar";
 import { getHabits } from "@/lib/services/habits";
+import { getSettings } from "@/lib/services/settings";
 import { prisma } from "@/lib/db";
 import { addDays } from "date-fns";
+import { DraggableDashboard } from "@/components/dashboard/draggable-dashboard";
+import { DEFAULT_DASHBOARD_LAYOUTS } from "@/lib/constants";
+import type { ResponsiveLayouts } from "react-grid-layout";
 
-function W({ children, title }: { children: React.ReactNode; title?: string }) {
+function W({ children }: { children: React.ReactNode }) {
   return (
-    <WidgetWrapper title={title}>
-      <ErrorBoundary>
-        <Suspense fallback={<WidgetSkeleton />}>
-          {children}
-        </Suspense>
-      </ErrorBoundary>
-    </WidgetWrapper>
+    <ErrorBoundary>
+      <Suspense fallback={<WidgetSkeleton />}>
+        {children}
+      </Suspense>
+    </ErrorBoundary>
   );
 }
 
@@ -47,18 +46,39 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 export default async function DashboardPage() {
   const now = new Date();
-  const [taskStats, events, habits, billsDue] = await Promise.all([
+  const [taskStats, events, habits, billsDue, settings] = await Promise.all([
     getTaskStats(),
     getUpcomingEvents(4),
     getHabits(),
     prisma.recurringExpense.count({
       where: { status: "ACTIVE", nextDueAt: { lte: addDays(now, 7) } },
     }),
+    getSettings(),
   ]);
 
   const completedHabits = habits.filter((habit) => habit.todayCompleted).length;
-
   const openTasks = Math.max(taskStats.total - taskStats.completed, 0);
+
+  let savedLayouts: ResponsiveLayouts = DEFAULT_DASHBOARD_LAYOUTS;
+  try {
+    const parsed = JSON.parse(settings.dashboardLayout || "{}");
+    if (parsed && typeof parsed === "object" && (parsed.lg || parsed.md)) {
+      savedLayouts = parsed as ResponsiveLayouts;
+    }
+  } catch {}
+
+  const widgets = [
+    { id: "clock",       node: <W><ClockWidget /></W> },
+    { id: "weather",     node: <W><WeatherWidget /></W> },
+    { id: "tasks",       node: <W><TasksWidget /></W> },
+    { id: "calendar",    node: <W><CalendarWidget /></W> },
+    { id: "habits",      node: <W><HabitsWidget /></W> },
+    { id: "bills",       node: <W><FinanceWidget /></W> },
+    { id: "notes",       node: <W><NotesWidget /></W> },
+    { id: "quick-links", node: <W><QuickLinksWidget /></W> },
+    { id: "pomodoro",    node: <W><PomodoroWidget /></W> },
+    { id: "analytics",   node: <W><AnalyticsWidget /></W> },
+  ];
 
   return (
     <AppShell>
@@ -83,54 +103,7 @@ export default async function DashboardPage() {
           </div>
         </section>
 
-        <WorkbenchLayout
-          main={
-            <>
-              <ResponsiveGrid columns={2}>
-                <div className="min-h-[260px]">
-                  <W title="Tasks"><TasksWidget /></W>
-                </div>
-                <div className="min-h-[260px]">
-                  <W title="Calendar"><CalendarWidget /></W>
-                </div>
-              </ResponsiveGrid>
-
-              <ResponsiveGrid columns={3}>
-                <div className="min-h-[220px]">
-                  <W title="Bills"><FinanceWidget /></W>
-                </div>
-                <div className="min-h-[220px]">
-                  <W title="Notes"><NotesWidget /></W>
-                </div>
-                <div className="min-h-[220px]">
-                  <W title="Quick Links"><QuickLinksWidget /></W>
-                </div>
-              </ResponsiveGrid>
-
-              <ResponsiveGrid columns={2}>
-                <div className="min-h-[260px]">
-                  <W title="Focus"><PomodoroWidget /></W>
-                </div>
-                <div className="min-h-[260px]">
-                  <W title="Review"><AnalyticsWidget /></W>
-                </div>
-              </ResponsiveGrid>
-            </>
-          }
-          rail={
-            <>
-            <div className="min-h-[150px]">
-              <W><ClockWidget /></W>
-            </div>
-            <div className="min-h-[220px]">
-              <W title="Weather"><WeatherWidget /></W>
-            </div>
-            <div className="min-h-[260px] sm:col-span-2 lg:col-span-1">
-              <W title="Habits"><HabitsWidget /></W>
-            </div>
-            </>
-          }
-        />
+        <DraggableDashboard widgets={widgets} initialLayouts={savedLayouts} />
       </div>
     </AppShell>
   );
