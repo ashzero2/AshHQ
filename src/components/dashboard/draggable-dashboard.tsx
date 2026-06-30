@@ -47,7 +47,7 @@ export function DraggableDashboard({ widgets, initialLayouts }: DraggableDashboa
       <GridLayout
         width={width}
         layout={layout}
-        gridConfig={{ cols, rowHeight: 72, margin: MARGIN }}
+        gridConfig={{ cols, rowHeight: 56, margin: MARGIN }}
         dragConfig={{ handle: ".drag-handle" }}
         onLayoutChange={(newLayout: Layout) => {
           latestRef.current = { ...latestRef.current, [breakpoint]: newLayout };
