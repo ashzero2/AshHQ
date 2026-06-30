@@ -43,11 +43,24 @@ model Task {
   reminderAt      DateTime?
   createdAt       DateTime  @default(now())
   updatedAt       DateTime  @updatedAt
+  subtasks        Subtask[]
 
   @@index([status])
   @@index([priority])
   @@index([dueDate])
   @@index([recurringTaskId])
+}
+
+model Subtask {
+  id        String   @id @default(cuid())
+  taskId    String
+  title     String
+  completed Boolean  @default(false)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  task      Task     @relation(fields: [taskId], references: [id], onDelete: Cascade)
+
+  @@index([taskId])
 }
 
 model RecurringTask {

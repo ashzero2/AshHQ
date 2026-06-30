@@ -19,13 +19,44 @@ export async function getTasks(filters?: {
 
   return prisma.task.findMany({
     where,
+    include: { subtasks: { orderBy: { sortOrder: "asc" } } },
     orderBy: [{ status: "asc" }, { priority: "desc" }, { createdAt: "desc" }],
   });
 }
 
 export async function getTaskById(id: string) {
   await requireAuth();
-  return prisma.task.findUnique({ where: { id } });
+  return prisma.task.findUnique({
+    where: { id },
+    include: { subtasks: { orderBy: { sortOrder: "asc" } } },
+  });
+}
+
+export async function createSubtask(taskId: string, title: string) {
+  await requireAuth();
+  const count = await prisma.subtask.count({ where: { taskId } });
+  const subtask = await prisma.subtask.create({
+    data: { taskId, title: title.trim(), sortOrder: count },
+  });
+  revalidatePath("/tasks");
+  return subtask;
+}
+
+export async function toggleSubtask(id: string) {
+  await requireAuth();
+  const sub = await prisma.subtask.findUniqueOrThrow({ where: { id } });
+  const updated = await prisma.subtask.update({
+    where: { id },
+    data: { completed: !sub.completed },
+  });
+  revalidatePath("/tasks");
+  return updated;
+}
+
+export async function deleteSubtask(id: string) {
+  await requireAuth();
+  await prisma.subtask.delete({ where: { id } });
+  revalidatePath("/tasks");
 }
 
 export async function createTask(data: CreateTaskInput) {

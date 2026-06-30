@@ -1,14 +1,14 @@
 "use client";
 
 import { useState, useTransition, useEffect } from "react";
-import { createTask, updateTask } from "@/lib/services/tasks";
+import { createTask, updateTask, createSubtask, deleteSubtask } from "@/lib/services/tasks";
 import { TASK_CATEGORIES } from "@/lib/constants";
 import { toast } from "sonner";
-import { X } from "lucide-react";
-import type { Task } from "@prisma/client";
+import { X, Plus, Trash2, Check } from "lucide-react";
+import type { Task, Subtask } from "@prisma/client";
 
 interface TaskFormProps {
-  task?: Task | null;
+  task?: (Task & { subtasks: Subtask[] }) | null;
   onClose: () => void;
 }
 
@@ -25,12 +25,31 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
   const [dueDate, setDueDate] = useState(
     task?.dueDate ? new Date(task.dueDate).toISOString().split("T")[0] : ""
   );
+  const [subtasks, setSubtasks] = useState<Subtask[]>(task?.subtasks ?? []);
+  const [newSubtask, setNewSubtask] = useState("");
 
   useEffect(() => {
     const handleKey = (e: KeyboardEvent) => { if (e.key === "Escape") onClose(); };
     document.addEventListener("keydown", handleKey);
     return () => document.removeEventListener("keydown", handleKey);
   }, [onClose]);
+
+  const handleAddSubtask = () => {
+    const t = newSubtask.trim();
+    if (!t || !task) return;
+    startTransition(async () => {
+      const sub = await createSubtask(task.id, t);
+      setSubtasks((prev) => [...prev, sub]);
+      setNewSubtask("");
+    });
+  };
+
+  const handleDeleteSubtask = (id: string) => {
+    startTransition(async () => {
+      await deleteSubtask(id);
+      setSubtasks((prev) => prev.filter((s) => s.id !== id));
+    });
+  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -150,6 +169,50 @@ export function TaskForm({ task, onClose }: TaskFormProps) {
               />
             </div>
           </div>
+
+          {task && (
+            <div>
+              <label className="text-[11px] font-medium text-muted-fg block mb-1.5">Subtasks</label>
+              <div className="space-y-1.5 mb-2">
+                {subtasks.map((sub) => (
+                  <div key={sub.id} className="flex items-center gap-2 group/sub">
+                    <div className={`w-4 h-4 rounded border flex items-center justify-center flex-shrink-0 ${sub.completed ? "bg-emerald border-emerald" : "border-outline-strong"}`}>
+                      {sub.completed && <Check size={9} className="text-background" />}
+                    </div>
+                    <span className={`text-[12px] flex-1 ${sub.completed ? "line-through text-muted-fg" : "text-foreground"}`}>
+                      {sub.title}
+                    </span>
+                    <button
+                      type="button"
+                      onClick={() => handleDeleteSubtask(sub.id)}
+                      className="opacity-0 group-hover/sub:opacity-100 text-subtle-fg hover:text-rose transition-all p-0.5 rounded"
+                      aria-label="Delete subtask"
+                    >
+                      <Trash2 size={11} />
+                    </button>
+                  </div>
+                ))}
+              </div>
+              <div className="flex gap-2">
+                <input
+                  type="text"
+                  value={newSubtask}
+                  onChange={(e) => setNewSubtask(e.target.value)}
+                  onKeyDown={(e) => { if (e.key === "Enter") { e.preventDefault(); handleAddSubtask(); } }}
+                  placeholder="Add a subtask…"
+                  className={inputCls + " flex-1 text-[12px] py-1.5"}
+                />
+                <button
+                  type="button"
+                  onClick={handleAddSubtask}
+                  disabled={!newSubtask.trim() || isPending}
+                  className="px-2.5 py-1.5 rounded-lg bg-surface-raised border border-outline text-muted-fg hover:text-foreground hover:border-outline-strong transition-colors disabled:opacity-30"
+                >
+                  <Plus size={13} />
+                </button>
+              </div>
+            </div>
+          )}
 
           <div className="flex gap-3 pt-1">
             <button
