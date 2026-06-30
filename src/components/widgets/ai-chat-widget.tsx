@@ -6,6 +6,7 @@ import { MessageSquareText, Send } from "lucide-react";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  isError?: boolean;
 }
 
 export function AiChatWidget() {
@@ -35,24 +36,32 @@ export function AiChatWidget() {
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      if (!res.ok || !res.body) throw new Error("Failed");
+      if (!res.ok || !res.body) {
+        const errMsg =
+          res.status === 401 ? "Session expired — please log in again." :
+          res.status === 503 ? "AI provider unavailable. Check API key in settings." :
+          `Request failed (${res.status}).`;
+        setMessages([...newMessages, { role: "assistant", content: errMsg, isError: true }]);
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let assistantContent = "";
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        assistantContent += decoder.decode(value, { stream: true });
-        setMessages([...newMessages, { role: "assistant", content: assistantContent }]);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          assistantContent += decoder.decode(value, { stream: true });
+          setMessages([...newMessages, { role: "assistant", content: assistantContent }]);
+        }
+      } catch {
+        setMessages([...newMessages, { role: "assistant", content: assistantContent + " *(interrupted)*", isError: true }]);
       }
     } catch {
-      setMessages([
-        ...newMessages,
-        { role: "assistant", content: "Couldn't connect. Check assistant settings." },
-      ]);
+      setMessages([...newMessages, { role: "assistant", content: "Could not reach the server.", isError: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -70,12 +79,14 @@ export function AiChatWidget() {
           {messages.map((msg, i) => (
             <div
               key={i}
-              className={`flex gap-2 text-[12px] ${msg.role === "user" ? "justify-end" : "justify-start"}`}
+              className={`flex flex-col gap-0.5 text-[12px] ${msg.role === "user" ? "items-end" : "items-start"}`}
             >
               <p
                 className={`rounded-lg px-2.5 py-1.5 max-w-[88%] leading-relaxed ${
                   msg.role === "user"
                     ? "bg-accent text-background"
+                    : msg.isError
+                    ? "bg-rose/10 border border-rose/20 text-rose"
                     : "bg-surface-raised text-muted-fg"
                 }`}
               >
@@ -87,6 +98,17 @@ export function AiChatWidget() {
                   </span>
                 ) : "")}
               </p>
+              {msg.isError && i === messages.length - 1 && (
+                <button
+                  onClick={() => {
+                    const lastUser = [...messages].reverse().find((m) => m.role === "user");
+                    if (lastUser) { setInput(lastUser.content); setMessages(messages.slice(0, -2)); }
+                  }}
+                  className="text-[10px] text-rose/70 hover:text-rose transition-colors"
+                >
+                  ↩ Retry
+                </button>
+              )}
             </div>
           ))}
         </div>
