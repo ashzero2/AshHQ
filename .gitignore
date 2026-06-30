@@ -40,5 +40,16 @@ yarn-error.log*
 *.tsbuildinfo
 next-env.d.ts
 prisma/ashhq.db
+prisma/ashhq.db-journal
+prisma/ashhq.db-shm
+prisma/ashhq.db-wal
+prisma/prisma/
 .env.local
 node_modules
+
+# local planning / analysis docs
+/plans/
+
+# tooling caches
+.pnpm-store/
+.zcode/
