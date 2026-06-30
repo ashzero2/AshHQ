@@ -31,6 +31,7 @@ const TYPE_ICON: Record<SearchResult["type"], React.ReactNode> = {
   task: <CheckSquare size={14} />,
   note: <StickyNote size={14} />,
   journal: <NotebookPen size={14} />,
+  habit: <Target size={14} />,
 };
 
 export function CommandPalette() {

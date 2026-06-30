@@ -1,5 +1,16 @@
+// Prevent duplicate bot/cron initialization across HMR reloads in dev mode.
+// Turbopack can re-invoke register() on each hot reload; without this guard
+// each call spawns a new polling loop and floods Turbopack's async-context
+// LimitedMap, causing "RangeError: Map maximum size exceeded".
+const g = globalThis as typeof globalThis & { __ashhq_registered?: boolean };
+
 export async function register() {
   if (process.env.NEXT_RUNTIME !== "nodejs") return;
+  if (g.__ashhq_registered) {
+    console.log("[instrumentation] already initialized, skipping (HMR re-invoke)");
+    return;
+  }
+  g.__ashhq_registered = true;
 
   const { Bot } = await import("grammy");
   const { prisma } = await import("@/lib/db");

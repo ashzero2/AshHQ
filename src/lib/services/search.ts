@@ -5,7 +5,7 @@ import { requireAuth } from "@/lib/auth-guard";
 
 export interface SearchResult {
   id: string;
-  type: "task" | "note" | "journal";
+  type: "task" | "note" | "journal" | "habit";
   title: string;
   subtitle: string;
   url: string;
@@ -16,7 +16,7 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
   const q = query.trim();
   if (q.length < 2) return [];
 
-  const [tasks, notes, journal] = await Promise.all([
+  const [tasks, notes, journal, habits] = await Promise.all([
     prisma.task.findMany({
       where: {
         status: { not: "DONE" },
@@ -42,6 +42,11 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
       where: { content: { contains: q } },
       take: 3,
       orderBy: { date: "desc" },
+    }),
+    prisma.habit.findMany({
+      where: { name: { contains: q } },
+      take: 5,
+      orderBy: { createdAt: "asc" },
     }),
   ]);
 
@@ -70,6 +75,13 @@ export async function searchContent(query: string): Promise<SearchResult[]> {
         ? j.content.replace(/<[^>]*>/g, " ").replace(/\s+/g, " ").trim().slice(0, 60)
         : "Empty entry",
       url: `/journal`,
+    })),
+    ...habits.map((h) => ({
+      id: h.id,
+      type: "habit" as const,
+      title: `${h.icon} ${h.name}`,
+      subtitle: `${h.frequency.toLowerCase()} habit`,
+      url: "/habits",
     })),
   ];
 
