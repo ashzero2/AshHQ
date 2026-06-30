@@ -51,39 +51,41 @@ model Task {
 }
 
 model RecurringTask {
-  id          String    @id @default(cuid())
-  title       String
-  description String?
-  priority    String    @default("MEDIUM")
-  status      String    @default("ACTIVE")
-  frequency   String
-  interval    Int       @default(1)
-  daysOfWeek  String?
-  dayOfMonth  Int?
-  cronExpr    String?
-  nextDueAt   DateTime
-  lastRunAt   DateTime?
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  title        String
+  description  String?
+  priority     String    @default("MEDIUM")
+  status       String    @default("ACTIVE")
+  frequency    String
+  interval     Int       @default(1)
+  daysOfWeek   String?
+  dayOfMonth   Int?
+  cronExpr     String?
+  reminderTime String?
+  nextDueAt    DateTime
+  lastRunAt    DateTime?
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([nextDueAt])
   @@index([status])
 }
 
 model RecurringExpense {
-  id          String    @id @default(cuid())
-  description String
-  amount      Float
-  category    String
-  frequency   String
-  interval    Int       @default(1)
-  dayOfMonth  Int?
-  nextDueAt   DateTime
-  lastPaidAt  DateTime?
-  autoApprove Boolean   @default(false)
-  status      String    @default("ACTIVE")
-  createdAt   DateTime  @default(now())
-  updatedAt   DateTime  @updatedAt
+  id           String    @id @default(cuid())
+  description  String
+  amount       Float
+  category     String
+  frequency    String
+  interval     Int       @default(1)
+  dayOfMonth   Int?
+  reminderTime String?
+  nextDueAt    DateTime
+  lastPaidAt   DateTime?
+  autoApprove  Boolean   @default(false)
+  status       String    @default("ACTIVE")
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
 
   @@index([nextDueAt])
   @@index([status])
@@ -151,12 +153,13 @@ model HabitLog {
 }
 
 model Note {
-  id        String   @id @default(cuid())
-  title     String
-  content   String   @default("")
-  pinned    Boolean  @default(false)
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  title       String
+  content     String   @default("")
+  contentType String   @default("plaintext")
+  pinned      Boolean  @default(false)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([pinned])
 }
@@ -174,12 +177,13 @@ model QuickLink {
 }
 
 model JournalEntry {
-  id        String   @id @default(cuid())
-  date      String   @unique
-  content   String   @default("")
-  mood      String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id          String   @id @default(cuid())
+  date        String   @unique
+  content     String   @default("")
+  contentType String   @default("plaintext")
+  mood        String?
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
 
   @@index([date])
 }

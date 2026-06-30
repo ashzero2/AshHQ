@@ -34,6 +34,7 @@ export function RecurringTaskForm({ task, onClose, onSave }: Props) {
   const [nextDueAt, setNextDueAt] = useState(
     task?.nextDueAt ? format(new Date(task.nextDueAt), "yyyy-MM-dd") : format(new Date(), "yyyy-MM-dd")
   );
+  const [reminderTime, setReminderTime] = useState(task?.reminderTime ?? "");
 
   const toggleDay = (day: number) =>
     setDaysOfWeek((prev) => prev.includes(day) ? prev.filter((d) => d !== day) : [...prev, day]);
@@ -43,6 +44,9 @@ export function RecurringTaskForm({ task, onClose, onSave }: Props) {
     if (!title.trim()) return;
     start(async () => {
       try {
+        const nextDueDate = reminderTime
+          ? new Date(`${nextDueAt}T${reminderTime}`)
+          : new Date(nextDueAt);
         const data = {
           title: title.trim(),
           description: description.trim() || undefined,
@@ -51,7 +55,8 @@ export function RecurringTaskForm({ task, onClose, onSave }: Props) {
           interval,
           daysOfWeek: frequency === "WEEKLY" && daysOfWeek.length > 0 ? daysOfWeek : undefined,
           dayOfMonth: frequency === "MONTHLY" ? dayOfMonth : undefined,
-          nextDueAt: new Date(nextDueAt),
+          reminderTime: reminderTime || undefined,
+          nextDueAt: nextDueDate,
         };
         if (task) {
           const updated = await updateRecurringTask(task.id, data);
@@ -132,6 +137,16 @@ export function RecurringTaskForm({ task, onClose, onSave }: Props) {
               <label className="text-[11px] text-muted-fg block mb-1">First due date</label>
               <input type="date" value={nextDueAt} onChange={(e) => setNextDueAt(e.target.value)} className={inputCls} />
             </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] text-muted-fg block mb-1">Reminder time <span className="text-subtle-fg">(optional — default: start of day)</span></label>
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className={inputCls}
+            />
           </div>
 
           {frequency === "WEEKLY" && (

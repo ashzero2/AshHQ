@@ -146,15 +146,15 @@ export function RecurringExpenseList({ initialExpenses }: Props) {
                   {formatCurrency(exp.amount)}
                 </span>
 
-                <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 focus-within:opacity-100 transition-opacity">
+                <div className={`flex items-center gap-1 transition-opacity focus-within:opacity-100 ${isDue && exp.status === "ACTIVE" ? "opacity-100" : "opacity-0 group-hover:opacity-100"}`}>
                   {isDue && exp.status === "ACTIVE" && !exp.autoApprove && (
                     <>
                       <button
                         onClick={() => handleApprove(exp.id)}
                         aria-label="Approve expense"
-                        className="p-1.5 rounded-lg text-subtle-fg hover:text-emerald hover:bg-emerald/10 transition-colors"
+                        className="flex items-center gap-1 px-2 py-1 rounded-lg text-[11px] font-medium text-emerald bg-emerald/10 hover:bg-emerald/20 transition-colors"
                       >
-                        <Check size={12} />
+                        <Check size={11} /> Record
                       </button>
                       <button
                         onClick={() => handleSnooze(exp.id)}

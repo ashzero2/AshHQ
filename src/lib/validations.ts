@@ -100,6 +100,7 @@ export const RecurringTaskSchema = z.object({
   daysOfWeek: z.array(z.number().int().min(0).max(6)).optional(),
   dayOfMonth: z.number().int().min(1).max(31).optional(),
   cronExpr: z.string().max(100).optional(),
+  reminderTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   nextDueAt: z.coerce.date(),
 });
 
@@ -110,6 +111,7 @@ export const RecurringExpenseSchema = z.object({
   frequency: z.enum(["MONTHLY", "WEEKLY", "YEARLY", "CUSTOM"]),
   interval: z.number().int().min(1).max(365).default(1),
   dayOfMonth: z.number().int().min(1).max(31).optional(),
+  reminderTime: z.string().regex(/^\d{2}:\d{2}$/).optional(),
   autoApprove: z.boolean().default(false),
 });
 

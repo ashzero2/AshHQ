@@ -26,6 +26,7 @@ export function RecurringExpenseForm({ expense, onClose, onSave }: Props) {
   const [frequency, setFrequency] = useState<string>(expense?.frequency ?? "MONTHLY");
   const [interval, setInterval] = useState(expense?.interval ?? 1);
   const [dayOfMonth, setDayOfMonth] = useState(expense?.dayOfMonth ?? 1);
+  const [reminderTime, setReminderTime] = useState(expense?.reminderTime ?? "");
   const [autoApprove, setAutoApprove] = useState(expense?.autoApprove ?? false);
 
   const handleSubmit = (e: React.FormEvent) => {
@@ -40,6 +41,7 @@ export function RecurringExpenseForm({ expense, onClose, onSave }: Props) {
           frequency: frequency as "MONTHLY" | "WEEKLY" | "YEARLY" | "CUSTOM",
           interval,
           dayOfMonth: frequency === "MONTHLY" || frequency === "YEARLY" ? dayOfMonth : undefined,
+          reminderTime: reminderTime || undefined,
           autoApprove,
         };
         if (expense) {
@@ -132,6 +134,16 @@ export function RecurringExpenseForm({ expense, onClose, onSave }: Props) {
               />
             </div>
           )}
+
+          <div>
+            <label className="text-[11px] text-muted-fg block mb-1">Reminder time <span className="text-subtle-fg">(optional — default: start of day)</span></label>
+            <input
+              type="time"
+              value={reminderTime}
+              onChange={(e) => setReminderTime(e.target.value)}
+              className={inputCls}
+            />
+          </div>
 
           <label className="flex items-center gap-2.5 cursor-pointer select-none">
             <input
