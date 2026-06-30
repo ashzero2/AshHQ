@@ -18,6 +18,40 @@ const MODE_LABELS: Record<Mode, string> = {
   LONG_BREAK: "Long break",
 };
 
+const STORAGE_KEY = "ashhq:pomodoro";
+
+interface StoredState {
+  mode: Mode;
+  sessions: number;
+  endAt: number | null;
+}
+
+function loadState(): StoredState | null {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    return raw ? (JSON.parse(raw) as StoredState) : null;
+  } catch {
+    return null;
+  }
+}
+
+function saveState(s: StoredState) {
+  try {
+    localStorage.setItem(STORAGE_KEY, JSON.stringify(s));
+  } catch {}
+}
+
+function notify(title: string, body: string) {
+  if (typeof Notification === "undefined" || Notification.permission !== "granted") return;
+  new Notification(title, { body, icon: "/favicon.ico" });
+}
+
+function requestNotificationPermission() {
+  if (typeof Notification !== "undefined" && Notification.permission === "default") {
+    Notification.requestPermission();
+  }
+}
+
 function pad(n: number) {
   return String(n).padStart(2, "0");
 }
@@ -28,8 +62,25 @@ export function PomodoroWidget() {
   const [running, setRunning] = useState(false);
   const [sessions, setSessions] = useState(0);
   const [, startTransition] = useTransition();
-  // endAt tracks the absolute timestamp when the current countdown finishes
   const endAtRef = useRef<number | null>(null);
+  const initializedRef = useRef(false);
+
+  // Restore from localStorage on mount
+  useEffect(() => {
+    if (initializedRef.current) return;
+    initializedRef.current = true;
+    const stored = loadState();
+    if (!stored) return;
+    setMode(stored.mode);
+    setSessions(stored.sessions);
+    if (stored.endAt && stored.endAt > Date.now()) {
+      endAtRef.current = stored.endAt;
+      setTimeLeft(Math.ceil((stored.endAt - Date.now()) / 1000));
+      setRunning(true);
+    } else {
+      setTimeLeft(DURATIONS[stored.mode]);
+    }
+  }, []);
 
   const total = DURATIONS[mode];
   const pct = ((total - timeLeft) / total) * 100;
@@ -41,21 +92,27 @@ export function PomodoroWidget() {
     setMode(m);
     setTimeLeft(DURATIONS[m]);
     setRunning(false);
+    saveState({ mode: m, sessions, endAt: null });
   };
 
   const reset = () => {
     endAtRef.current = null;
     setRunning(false);
     setTimeLeft(DURATIONS[mode]);
+    saveState({ mode, sessions, endAt: null });
   };
 
   const toggleRunning = () => {
     if (running) {
       endAtRef.current = null;
       setRunning(false);
+      saveState({ mode, sessions, endAt: null });
     } else {
-      endAtRef.current = Date.now() + timeLeft * 1000;
+      requestNotificationPermission();
+      const endAt = Date.now() + timeLeft * 1000;
+      endAtRef.current = endAt;
       setRunning(true);
+      saveState({ mode, sessions, endAt });
     }
   };
 
@@ -70,10 +127,18 @@ export function PomodoroWidget() {
         setRunning(false);
         endAtRef.current = null;
         if (mode === "WORK") {
-          setSessions((s) => s + 1);
+          setSessions((s) => {
+            const next = s + 1;
+            saveState({ mode, sessions: next, endAt: null });
+            return next;
+          });
+          notify("Focus session complete!", "Time for a break. Great work.");
           startTransition(async () => {
             await createFocusSession({ duration: Math.round(DURATIONS.WORK / 60), type: "WORK" });
           });
+        } else {
+          saveState({ mode, sessions, endAt: null });
+          notify("Break over!", "Ready for another focus session?");
         }
       } else {
         setTimeLeft(remaining);
@@ -81,7 +146,7 @@ export function PomodoroWidget() {
     }, 500);
 
     return () => clearInterval(interval);
-  }, [running, mode]);
+  }, [running, mode, sessions]);
 
   const r = 38;
   const circumference = 2 * Math.PI * r;
