@@ -5,7 +5,9 @@ import { TaskCard } from "./task-card";
 import { TaskForm } from "./task-form";
 import { RecurringTaskList } from "./recurring-task-list";
 import { Plus, Repeat } from "lucide-react";
-import type { Task, RecurringTask } from "@prisma/client";
+import type { Task, RecurringTask, Subtask } from "@prisma/client";
+
+type TaskWithSubtasks = Task & { subtasks: Subtask[] };
 
 const FILTERS = [
   { key: "ALL", label: "All" },
@@ -16,14 +18,14 @@ const FILTERS = [
 ];
 
 interface TaskListProps {
-  tasks: Task[];
+  tasks: TaskWithSubtasks[];
   recurringTasks: RecurringTask[];
 }
 
 export function TaskList({ tasks, recurringTasks }: TaskListProps) {
   const [tab, setTab] = useState<"tasks" | "recurring">("tasks");
   const [showForm, setShowForm] = useState(false);
-  const [editingTask, setEditingTask] = useState<Task | null>(null);
+  const [editingTask, setEditingTask] = useState<TaskWithSubtasks | null>(null);
   const [filter, setFilter] = useState<string>("ALL");
 
   const filtered = tasks.filter((t) => {

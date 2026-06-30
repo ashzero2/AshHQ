@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { requireAuth } from "@/lib/auth-guard";
 import { CreateNoteSchema, UpdateNoteSchema } from "@/lib/validations";
 import type { CreateNoteInput, UpdateNoteInput } from "@/lib/validations";
+import { sanitizeRichText } from "@/lib/sanitize";
 
 export async function getNotes() {
   await requireAuth();
@@ -21,6 +22,7 @@ export async function getNoteById(id: string) {
 export async function createNote(data: CreateNoteInput) {
   await requireAuth();
   const parsed = CreateNoteSchema.parse(data);
+  if (parsed.content) parsed.content = sanitizeRichText(parsed.content);
   const note = await prisma.note.create({ data: parsed });
   revalidatePath("/notes");
   return note;
@@ -30,6 +32,7 @@ export async function updateNote(data: UpdateNoteInput) {
   await requireAuth();
   const parsed = UpdateNoteSchema.parse(data);
   const { id, ...updateData } = parsed;
+  if (updateData.content) updateData.content = sanitizeRichText(updateData.content);
   const note = await prisma.note.update({
     where: { id },
     data: updateData,

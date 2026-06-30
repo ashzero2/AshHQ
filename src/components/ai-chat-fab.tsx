@@ -8,6 +8,7 @@ import ReactMarkdown from "react-markdown";
 interface Message {
   role: "user" | "assistant";
   content: string;
+  isError?: boolean;
 }
 
 export function AiChatFab() {
@@ -53,21 +54,36 @@ export function AiChatFab() {
         body: JSON.stringify({ messages: newMessages }),
       });
 
-      if (!res.ok || !res.body) throw new Error("Failed");
+      if (!res.ok || !res.body) {
+        const errMsg =
+          res.status === 401 ? "Session expired — please log in again." :
+          res.status === 503 ? "AI provider unavailable. Check your API key in settings." :
+          `Request failed (${res.status}). Check assistant settings.`;
+        setMessages([...newMessages, { role: "assistant", content: errMsg, isError: true }]);
+        return;
+      }
 
       const reader = res.body.getReader();
       const decoder = new TextDecoder();
       let content = "";
       setMessages([...newMessages, { role: "assistant", content: "" }]);
 
-      while (true) {
-        const { done, value } = await reader.read();
-        if (done) break;
-        content += decoder.decode(value, { stream: true });
-        setMessages([...newMessages, { role: "assistant", content }]);
+      try {
+        while (true) {
+          const { done, value } = await reader.read();
+          if (done) break;
+          content += decoder.decode(value, { stream: true });
+          setMessages([...newMessages, { role: "assistant", content }]);
+        }
+      } catch {
+        setMessages([...newMessages, {
+          role: "assistant",
+          content: content + "\n\n*(Connection interrupted)*",
+          isError: true,
+        }]);
       }
     } catch {
-      setMessages([...newMessages, { role: "assistant", content: "Couldn't connect. Check assistant settings." }]);
+      setMessages([...newMessages, { role: "assistant", content: "Could not reach the server. Check your connection.", isError: true }]);
     } finally {
       setIsLoading(false);
     }
@@ -140,7 +156,7 @@ export function AiChatFab() {
                   <p className="text-[12px] text-muted-fg mt-1">Use it for quick summaries and lookups.</p>
                 </div>
                 <div className="flex flex-col gap-1.5 w-full max-w-[280px] mt-1">
-                  {["What is on my schedule today?", "Which habits are still open?", "Summarize this month's spending"].map((suggestion) => (
+                  {["What is on my schedule today?", "Which habits are still open?", "What bills are due this week?"].map((suggestion) => (
                     <button
                       key={suggestion}
                       onClick={() => { setInput(suggestion); inputRef.current?.focus(); }}
@@ -153,11 +169,13 @@ export function AiChatFab() {
               </div>
             ) : (
               messages.map((msg, i) => (
-                <div key={i} className={`flex ${msg.role === "user" ? "justify-end" : "justify-start"}`}>
+                <div key={i} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
                   <div
                     className={`max-w-[85%] rounded-lg px-3.5 py-2.5 text-[13px] leading-relaxed ${
                       msg.role === "user"
                         ? "bg-accent text-background"
+                        : msg.isError
+                        ? "bg-rose/10 border border-rose/20 text-rose"
                         : "bg-surface-raised text-foreground"
                     }`}
                   >
@@ -167,7 +185,7 @@ export function AiChatFab() {
                         <span className="w-1.5 h-1.5 rounded-full bg-muted-fg animate-bounce" style={{ animationDelay: "150ms" }} />
                         <span className="w-1.5 h-1.5 rounded-full bg-muted-fg animate-bounce" style={{ animationDelay: "300ms" }} />
                       </span>
-                    ) : msg.role === "assistant" ? (
+                    ) : msg.role === "assistant" && !msg.isError ? (
                       <div className="prose prose-sm prose-invert max-w-none [&>*:first-child]:mt-0 [&>*:last-child]:mb-0 [&_p]:my-1 [&_ul]:my-1 [&_ol]:my-1 [&_li]:my-0.5 [&_strong]:text-foreground [&_code]:bg-elevated [&_code]:px-1 [&_code]:rounded [&_code]:text-[12px]">
                         <ReactMarkdown>{msg.content}</ReactMarkdown>
                       </div>
@@ -175,6 +193,17 @@ export function AiChatFab() {
                       msg.content
                     )}
                   </div>
+                  {msg.isError && i === messages.length - 1 && (
+                    <button
+                      onClick={() => {
+                        const lastUser = [...messages].reverse().find((m) => m.role === "user");
+                        if (lastUser) { setInput(lastUser.content); setMessages(messages.slice(0, -2)); }
+                      }}
+                      className="text-[10px] text-rose/70 hover:text-rose mt-1 transition-colors"
+                    >
+                      ↩ Retry
+                    </button>
+                  )}
                 </div>
               ))
             )}
