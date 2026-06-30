@@ -13,6 +13,8 @@ export function proxy(request: NextRequest) {
     "/manifest.json",
     "/sw.js",
     "/api/health",
+    "/api/scheduler",
+    "/api/telegram/webhook",
   ];
   const isPublic = publicPaths.some((p) => pathname.startsWith(p));
 
