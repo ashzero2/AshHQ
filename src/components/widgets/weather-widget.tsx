@@ -40,7 +40,11 @@ export function WeatherWidget() {
       .finally(() => setLoading(false));
   }, []);
 
-  useEffect(() => { fetchWeather(); }, [fetchWeather]);
+  useEffect(() => {
+    fetchWeather();
+    const id = setInterval(fetchWeather, 30 * 60 * 1000);
+    return () => clearInterval(id);
+  }, [fetchWeather]);
 
   if (loading) {
     return (
