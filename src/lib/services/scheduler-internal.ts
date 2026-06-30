@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { processRecurringTasksDue } from "./recurring-tasks-internal";
 import { processRecurringExpensesDue } from "./recurring-expenses-internal";
 import { NotificationManager } from "@/lib/channels/notification-manager";
-import { format, startOfDay, endOfDay, startOfMonth, endOfMonth } from "date-fns";
+import { format, startOfDay, endOfDay } from "date-fns";
 
 export async function runSchedulerInternal(): Promise<{ tasks: number; expenses: number; pending: number }> {
   const [tasks, expResult] = await Promise.all([
@@ -67,47 +67,6 @@ export async function processTaskReminders(): Promise<number> {
   return tasks.length;
 }
 
-// Track which budget+month keys have already been alerted this server session to avoid spam.
-const alertedBudgets = new Set<string>();
-
-// Check whether any budget category has been exceeded this month and notify once per overage.
-export async function checkBudgetAlerts(): Promise<void> {
-  const now = new Date();
-  const month = now.getMonth() + 1;
-  const year = now.getFullYear();
-  const monthKey = `${year}-${month}`;
-
-  const [budgets, transactions] = await Promise.all([
-    prisma.budget.findMany({ where: { month, year } }),
-    prisma.transaction.findMany({
-      where: {
-        type: "EXPENSE",
-        date: { gte: startOfMonth(now), lte: endOfMonth(now) },
-      },
-    }),
-  ]);
-
-  if (budgets.length === 0) return;
-
-  const spent: Record<string, number> = {};
-  transactions.forEach((t) => { spent[t.category] = (spent[t.category] || 0) + t.amount; });
-
-  for (const budget of budgets) {
-    const s = spent[budget.category] || 0;
-    if (s <= budget.amount) continue;
-
-    const alertKey = `${monthKey}:${budget.category}`;
-    if (alertedBudgets.has(alertKey)) continue;
-
-    alertedBudgets.add(alertKey);
-    const pct = Math.round((s / budget.amount) * 100);
-    await NotificationManager.sendToAll({
-      title: "💸 Budget Exceeded",
-      body: `${budget.category}: ₹${s.toLocaleString("en-IN")} spent vs ₹${budget.amount.toLocaleString("en-IN")} budget (${pct}%)`,
-      type: "INFO",
-    }).catch(() => {});
-  }
-}
 
 // Send a morning briefing: overdue tasks, today's events, habit status, expenses due today.
 export async function sendMorningSummary(): Promise<void> {

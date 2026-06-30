@@ -20,8 +20,8 @@ import { AnalyticsWidget } from "@/components/widgets/analytics-widget";
 import { getTaskStats } from "@/lib/services/tasks";
 import { getUpcomingEvents } from "@/lib/services/calendar";
 import { getHabits } from "@/lib/services/habits";
-import { getFinanceSummary } from "@/lib/services/finance";
-import { formatCurrency } from "@/lib/utils";
+import { prisma } from "@/lib/db";
+import { addDays } from "date-fns";
 
 function W({ children, title }: { children: React.ReactNode; title?: string }) {
   return (
@@ -47,14 +47,17 @@ function Stat({ label, value, sub }: { label: string; value: string; sub?: strin
 
 export default async function DashboardPage() {
   const now = new Date();
-  const [taskStats, events, habits, finance] = await Promise.all([
+  const [taskStats, events, habits, billsDue] = await Promise.all([
     getTaskStats(),
     getUpcomingEvents(4),
     getHabits(),
-    getFinanceSummary(now.getMonth() + 1, now.getFullYear()),
+    prisma.recurringExpense.count({
+      where: { status: "ACTIVE", nextDueAt: { lte: addDays(now, 7) } },
+    }),
   ]);
 
   const completedHabits = habits.filter((habit) => habit.todayCompleted).length;
+
   const openTasks = Math.max(taskStats.total - taskStats.completed, 0);
 
   return (
@@ -76,7 +79,7 @@ export default async function DashboardPage() {
             <Stat label="Open" value={String(openTasks)} sub={`${taskStats.overdue} overdue`} />
             <Stat label="Events" value={String(events.length)} sub="Next up" />
             <Stat label="Habits" value={`${completedHabits}/${habits.length}`} sub="Done today" />
-            <Stat label="Balance" value={formatCurrency(finance.balance)} sub="This month" />
+            <Stat label="Bills due" value={String(billsDue)} sub="Next 7 days" />
           </div>
         </section>
 
@@ -94,7 +97,7 @@ export default async function DashboardPage() {
 
               <ResponsiveGrid columns={3}>
                 <div className="min-h-[220px]">
-                  <W title="Finance"><FinanceWidget /></W>
+                  <W title="Bills"><FinanceWidget /></W>
                 </div>
                 <div className="min-h-[220px]">
                   <W title="Notes"><NotesWidget /></W>

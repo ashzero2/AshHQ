@@ -1,22 +1,28 @@
-import { getFinanceSummary } from "@/lib/services/finance";
-import { Wallet, TrendingUp, TrendingDown } from "lucide-react";
+import { prisma } from "@/lib/db";
+import { addDays } from "date-fns";
+import { Receipt } from "lucide-react";
 import Link from "next/link";
-import { formatCurrency } from "@/lib/utils";
 
 export async function FinanceWidget() {
   const now = new Date();
-  const summary = await getFinanceSummary(now.getMonth() + 1, now.getFullYear());
+  const soon = addDays(now, 7);
 
-  if (summary.totalIncome === 0 && summary.totalExpenses === 0) {
+  const bills = await prisma.recurringExpense.findMany({
+    where: { status: "ACTIVE", nextDueAt: { lte: soon } },
+    orderBy: { nextDueAt: "asc" },
+    take: 4,
+  });
+
+  if (bills.length === 0) {
     return (
       <div className="flex flex-col items-center justify-center h-full gap-3 text-subtle-fg">
         <div className="w-10 h-10 rounded-xl bg-surface-raised border border-outline flex items-center justify-center">
-          <Wallet size={17} className="text-muted-fg" />
+          <Receipt size={17} className="text-muted-fg" />
         </div>
         <div className="text-center">
-          <p className="text-xs text-muted-fg">No transactions</p>
+          <p className="text-xs text-muted-fg">No bills due this week</p>
           <Link href="/finance" className="text-[11px] text-accent hover:text-accent-light transition-colors mt-0.5 block">
-            Add a transaction
+            Manage bills →
           </Link>
         </div>
       </div>
@@ -26,41 +32,28 @@ export async function FinanceWidget() {
   return (
     <div className="flex flex-col h-full">
       <div className="space-y-2 flex-1">
-        <div className="flex items-center justify-between py-0.5">
-          <span className="flex items-center gap-1.5 text-[12px] text-muted-fg">
-            <TrendingUp size={12} className="text-emerald" />
-            Income
-          </span>
-          <span className="text-[13px] font-semibold text-emerald tabular-nums">
-            {formatCurrency(summary.totalIncome)}
-          </span>
-        </div>
-        <div className="flex items-center justify-between py-0.5">
-          <span className="flex items-center gap-1.5 text-[12px] text-muted-fg">
-            <TrendingDown size={12} className="text-rose" />
-            Expenses
-          </span>
-          <span className="text-[13px] font-semibold text-rose tabular-nums">
-            {formatCurrency(summary.totalExpenses)}
-          </span>
-        </div>
-        <div className="border-t border-outline/60 pt-2 flex items-center justify-between">
-          <span className="text-[12px] text-muted-fg flex items-center gap-1.5">
-            <Wallet size={12} className="text-accent" />
-            Balance
-          </span>
-          <span
-            className={`text-[14px] font-bold tabular-nums ${summary.balance >= 0 ? "text-emerald" : "text-rose"}`}
-          >
-            {formatCurrency(summary.balance)}
-          </span>
-        </div>
+        {bills.map((bill) => {
+          const diff = Math.ceil((new Date(bill.nextDueAt).getTime() - now.getTime()) / 86400000);
+          const when = diff <= 0 ? "Today" : diff === 1 ? "Tomorrow" : `In ${diff}d`;
+          const urgent = diff <= 1;
+          return (
+            <div key={bill.id} className="flex items-center justify-between gap-2 py-0.5">
+              <span className="text-[12px] text-foreground truncate flex-1">{bill.description}</span>
+              <span className={`text-[11px] font-medium tabular-nums flex-shrink-0 ${urgent ? "text-rose" : "text-muted-fg"}`}>
+                {when}
+              </span>
+              <span className="text-[12px] font-semibold text-foreground tabular-nums flex-shrink-0">
+                ₹{bill.amount.toLocaleString("en-IN")}
+              </span>
+            </div>
+          );
+        })}
       </div>
       <Link
         href="/finance"
         className="text-[11px] text-accent hover:text-accent-light transition-colors mt-2 pt-2 border-t border-outline/60"
       >
-        View details →
+        View all bills →
       </Link>
     </div>
   );

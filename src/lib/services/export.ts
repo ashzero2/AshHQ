@@ -3,12 +3,11 @@
 import { prisma } from "@/lib/db";
 
 export async function exportAllData() {
-  const [tasks, events, transactions, budgets, habits, habitLogs, notes, links, journal] =
+  const [tasks, events, recurringExpenses, habits, habitLogs, notes, links, journal] =
     await Promise.all([
       prisma.task.findMany(),
       prisma.calendarEvent.findMany(),
-      prisma.transaction.findMany(),
-      prisma.budget.findMany(),
+      prisma.recurringExpense.findMany(),
       prisma.habit.findMany(),
       prisma.habitLog.findMany(),
       prisma.note.findMany(),
@@ -17,8 +16,8 @@ export async function exportAllData() {
     ]);
 
   return {
-    version: 1,
+    version: 2,
     exportedAt: new Date().toISOString(),
-    data: { tasks, events, transactions, budgets, habits, habitLogs, notes, links, journal },
+    data: { tasks, events, recurringExpenses, habits, habitLogs, notes, links, journal },
   };
 }

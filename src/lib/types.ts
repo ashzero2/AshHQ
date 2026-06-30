@@ -11,11 +11,6 @@ export enum TaskStatus {
   DONE = "DONE",
 }
 
-export enum TransactionType {
-  INCOME = "INCOME",
-  EXPENSE = "EXPENSE",
-}
-
 export enum WidgetType {
   WEATHER = "WEATHER",
   CALENDAR = "CALENDAR",
@@ -93,33 +88,6 @@ export interface Task {
   completedAt: Date | null;
   createdAt: Date;
   updatedAt: Date;
-}
-
-export interface Transaction {
-  id: string;
-  amount: number;
-  type: TransactionType;
-  category: string;
-  description: string | null;
-  date: Date;
-  createdAt: Date;
-}
-
-export interface Budget {
-  id: string;
-  category: string;
-  amount: number;
-  month: number;
-  year: number;
-  createdAt: Date;
-}
-
-export interface FinanceSummary {
-  totalIncome: number;
-  totalExpenses: number;
-  balance: number;
-  byCategory: { category: string; amount: number; percentage: number }[];
-  monthlyTrend: { month: string; income: number; expenses: number }[];
 }
 
 export interface Habit {

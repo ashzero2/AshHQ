@@ -5,16 +5,14 @@ import { createGoogleGenerativeAI } from "@ai-sdk/google";
 import { NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { validateSessionToken } from "@/lib/services/auth";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, addDays } from "date-fns";
 import { cookies } from "next/headers";
 
 async function buildContextPrompt(): Promise<string> {
   const today = new Date();
   const todayStr = format(today, "yyyy-MM-dd");
-  const monthStart = startOfMonth(today);
-  const monthEnd = endOfMonth(today);
 
-  const [tasks, events, habits, transactions, notes] = await Promise.all([
+  const [tasks, events, habits, bills, notes] = await Promise.all([
     prisma.task.findMany({
       where: { status: { not: "DONE" } },
       orderBy: [{ priority: "desc" }, { createdAt: "desc" }],
@@ -29,19 +27,16 @@ async function buildContextPrompt(): Promise<string> {
       include: { logs: { where: { date: todayStr } } },
       orderBy: { createdAt: "asc" },
     }),
-    prisma.transaction.findMany({
-      where: { date: { gte: monthStart, lte: monthEnd } },
-      orderBy: { date: "desc" },
-      take: 100,
+    prisma.recurringExpense.findMany({
+      where: { status: "ACTIVE", nextDueAt: { lte: addDays(today, 7) } },
+      orderBy: { nextDueAt: "asc" },
+      take: 10,
     }),
     prisma.note.findMany({
       orderBy: [{ pinned: "desc" }, { updatedAt: "desc" }],
       take: 10,
     }),
   ]);
-
-  const income = transactions.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
-  const expenses = transactions.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0);
 
   const taskLines = tasks.length
     ? tasks.map((t) => `  - [${t.priority}] ${t.title} (${t.status})${t.dueDate ? ` — due ${format(new Date(t.dueDate), "MMM d")}` : ""}`).join("\n")
@@ -54,6 +49,14 @@ async function buildContextPrompt(): Promise<string> {
   const habitLines = habits.length
     ? habits.map((h) => `  - ${h.icon} ${h.name}: ${h.logs.length > 0 ? "✅ done" : "⬜ not done"}`).join("\n")
     : "  (none)";
+
+  const billLines = bills.length
+    ? bills.map((b) => {
+        const diff = Math.ceil((new Date(b.nextDueAt).getTime() - today.getTime()) / 86400000);
+        const when = diff <= 0 ? "due today" : `in ${diff}d`;
+        return `  - ${b.description}: ₹${b.amount.toLocaleString("en-IN")} (${when})`;
+      }).join("\n")
+    : "  (none due soon)";
 
   const noteLines = notes.length
     ? notes.map((n) => `  - "${n.title}"${n.pinned ? " 📌" : ""}${n.content ? `: ${n.content.slice(0, 80)}${n.content.length > 80 ? "…" : ""}` : ""}`).join("\n")
@@ -72,8 +75,8 @@ ${eventLines}
 TODAY'S HABITS (${habits.length} total):
 ${habitLines}
 
-FINANCE THIS MONTH:
-  Income: ${income.toLocaleString("en-IN", { style: "currency", currency: "INR" })} | Expenses: ${expenses.toLocaleString("en-IN", { style: "currency", currency: "INR" })} | Balance: ${(income - expenses).toLocaleString("en-IN", { style: "currency", currency: "INR" })}
+BILLS DUE SOON (${bills.length}):
+${billLines}
 
 RECENT NOTES (${notes.length}):
 ${noteLines}`;

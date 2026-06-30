@@ -26,25 +26,14 @@ function computeNextDue(expense: RecurringExpense, from: Date = new Date()): Dat
   return applyReminderTime(next, reminderTime);
 }
 
-export async function approveExpenseInternal(recurringExpenseId: string): Promise<{ amount: number; transaction: import("@prisma/client").Transaction }> {
+export async function approveExpenseInternal(recurringExpenseId: string): Promise<{ amount: number }> {
   const exp = await prisma.recurringExpense.findUniqueOrThrow({ where: { id: recurringExpenseId } });
   const nextDue = computeNextDue(exp, exp.nextDueAt);
-  const [transaction] = await prisma.$transaction([
-    prisma.transaction.create({
-      data: {
-        amount: exp.amount,
-        type: "EXPENSE",
-        category: exp.category,
-        description: exp.description,
-        date: new Date(),
-      },
-    }),
-    prisma.recurringExpense.update({
-      where: { id: recurringExpenseId },
-      data: { lastPaidAt: new Date(), nextDueAt: nextDue },
-    }),
-  ]);
-  return { amount: exp.amount, transaction };
+  await prisma.recurringExpense.update({
+    where: { id: recurringExpenseId },
+    data: { lastPaidAt: new Date(), nextDueAt: nextDue },
+  });
+  return { amount: exp.amount };
 }
 
 export async function snoozeExpenseInternal(recurringExpenseId: string, days: number): Promise<void> {
@@ -66,21 +55,10 @@ export async function processRecurringExpensesDue(): Promise<{ autoRecorded: num
 
   for (const exp of auto) {
     const nextDue = computeNextDue(exp, exp.nextDueAt);
-    await prisma.$transaction([
-      prisma.transaction.create({
-        data: {
-          amount: exp.amount,
-          type: "EXPENSE",
-          category: exp.category,
-          description: exp.description,
-          date: new Date(),
-        },
-      }),
-      prisma.recurringExpense.update({
-        where: { id: exp.id },
-        data: { lastPaidAt: new Date(), nextDueAt: nextDue },
-      }),
-    ]);
+    await prisma.recurringExpense.update({
+      where: { id: exp.id },
+      data: { lastPaidAt: new Date(), nextDueAt: nextDue },
+    });
   }
 
   return { autoRecorded: auto.length, pendingItems: pending };

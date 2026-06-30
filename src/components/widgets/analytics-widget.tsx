@@ -6,7 +6,7 @@ import {
   getPomodoroAnalytics,
 } from "@/lib/services/analytics";
 import { formatCurrency } from "@/lib/utils";
-import { BarChart2, ArrowRight, TrendingUp, TrendingDown } from "lucide-react";
+import { BarChart2, ArrowRight } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 function Stat({
@@ -71,10 +71,10 @@ export async function AnalyticsWidget() {
           colorClass={tasks.overdue > 0 ? "text-rose" : "text-foreground"}
         />
         <Stat
-          label="Balance"
-          value={formatCurrency(finance.balance)}
-          sub={`${finance.savingsRate}% saved`}
-          colorClass={finance.balance >= 0 ? "text-emerald" : "text-rose"}
+          label="Bills"
+          value={formatCurrency(finance.totalMonthly)}
+          sub={`${finance.totalActive} active`}
+          colorClass="text-foreground"
         />
         <Stat
           label="Focus"
@@ -96,19 +96,9 @@ export async function AnalyticsWidget() {
         </div>
 
         <div className="flex items-center gap-3">
-          {finance.incomeDelta !== 0 && (
-            <span
-              className={cn(
-                "flex items-center gap-0.5 text-[10px] tabular-nums",
-                finance.incomeDelta > 0 ? "text-emerald" : "text-rose"
-              )}
-            >
-              {finance.incomeDelta > 0 ? (
-                <TrendingUp size={10} />
-              ) : (
-                <TrendingDown size={10} />
-              )}
-              {Math.abs(Math.round(finance.incomeDelta))}% income vs last mo
+          {finance.dueSoonCount > 0 && (
+            <span className={cn("text-[10px] tabular-nums text-rose")}>
+              {finance.dueSoonCount} bill{finance.dueSoonCount !== 1 ? "s" : ""} due in 30d
             </span>
           )}
         </div>

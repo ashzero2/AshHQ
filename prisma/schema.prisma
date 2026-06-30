@@ -105,30 +105,6 @@ model CalendarEvent {
   @@index([startTime, endTime])
 }
 
-model Transaction {
-  id          String   @id @default(cuid())
-  amount      Float
-  type        String
-  category    String
-  description String?
-  date        DateTime
-  createdAt   DateTime @default(now())
-
-  @@index([type])
-  @@index([date])
-  @@index([category])
-}
-
-model Budget {
-  id        String   @id @default(cuid())
-  category  String
-  amount    Float
-  month     Int
-  year      Int
-  createdAt DateTime @default(now())
-
-  @@unique([category, month, year])
-}
 
 model Habit {
   id        String     @id @default(cuid())

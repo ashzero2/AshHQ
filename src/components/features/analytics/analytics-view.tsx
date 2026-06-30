@@ -21,12 +21,10 @@ interface TaskAnalytics {
 }
 
 interface FinanceAnalytics {
-  thisIncome: number;
-  thisExpenses: number;
-  balance: number;
-  savingsRate: number;
-  incomeDelta: number;
-  expensesDelta: number;
+  totalActive: number;
+  totalMonthly: number;
+  dueSoonCount: number;
+  dueSoonTotal: number;
   topCategories: { category: string; amount: number; pct: number }[];
 }
 
@@ -106,7 +104,7 @@ export function AnalyticsView({
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 mb-2">
         <StatCard label="Habits this week" value={`${habits.weekCompletionRate}%`} sub={`${habits.total} habits tracked`} color="text-emerald" />
         <StatCard label="Tasks done" value={tasks.completed} sub={`${totalTasksActive} active · ${tasks.overdue} overdue`} color={tasks.overdue > 0 ? "text-rose" : "text-foreground"} />
-        <StatCard label="This month" value={formatCurrency(finance.balance)} sub={`${finance.savingsRate}% savings rate`} color={finance.balance >= 0 ? "text-emerald" : "text-rose"} />
+        <StatCard label="Monthly bills" value={formatCurrency(finance.totalMonthly)} sub={`${finance.totalActive} active`} color="text-foreground" />
         <StatCard label="Focus sessions" value={pomodoro.totalSessions} sub={`${Math.round(pomodoro.totalMinutes / 60)}h total focus`} color="text-sky" />
       </div>
 
@@ -166,33 +164,33 @@ export function AnalyticsView({
         </div>
       </div>
 
-      {/* ── Finance ── */}
-      <SectionHeader title="Finance" />
+      {/* ── Bills ── */}
+      <SectionHeader title="Bills" />
       <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
         <div className="bg-surface border border-outline rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle-fg mb-3">This Month</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle-fg mb-3">Recurring Expenses</p>
           <div className="space-y-3">
             <div className="flex justify-between items-center">
-              <span className="text-[12px] text-muted-fg">Income</span>
-              <span className="text-sm font-semibold text-emerald tabular-nums">+{formatCurrency(finance.thisIncome)}</span>
+              <span className="text-[12px] text-muted-fg">Active bills</span>
+              <span className="text-sm font-semibold text-foreground tabular-nums">{finance.totalActive}</span>
             </div>
             <div className="flex justify-between items-center">
-              <span className="text-[12px] text-muted-fg">Expenses</span>
-              <span className="text-sm font-semibold text-rose tabular-nums">−{formatCurrency(finance.thisExpenses)}</span>
+              <span className="text-[12px] text-muted-fg">Monthly total</span>
+              <span className="text-sm font-semibold text-foreground tabular-nums">{formatCurrency(finance.totalMonthly)}</span>
             </div>
             <div className="border-t border-outline pt-3 flex justify-between items-center">
-              <span className="text-[12px] text-muted-fg">Savings rate</span>
-              <span className={`text-sm font-bold tabular-nums ${finance.savingsRate >= 0 ? "text-emerald" : "text-rose"}`}>
-                {finance.savingsRate}%
+              <span className="text-[12px] text-muted-fg">Due in 30 days</span>
+              <span className="text-sm font-bold tabular-nums text-rose">
+                {finance.dueSoonCount} ({formatCurrency(finance.dueSoonTotal)})
               </span>
             </div>
           </div>
         </div>
 
         <div className="bg-surface border border-outline rounded-xl p-5 shadow-[0_1px_3px_rgba(0,0,0,0.3)]">
-          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle-fg mb-3">Top Expense Categories</p>
+          <p className="text-[10px] font-semibold uppercase tracking-[0.12em] text-subtle-fg mb-3">By Category</p>
           {finance.topCategories.length === 0 ? (
-            <p className="text-sm text-muted-fg text-center py-4">No expenses this month</p>
+            <p className="text-sm text-muted-fg text-center py-4">No active bills</p>
           ) : (
             <div className="space-y-2.5">
               {finance.topCategories.map((c) => (

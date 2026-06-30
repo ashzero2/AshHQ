@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { format, startOfMonth, endOfMonth } from "date-fns";
+import { format, addDays } from "date-fns";
 
 export interface CommandResult {
   text: string;
@@ -15,8 +15,7 @@ export async function executeCommand(command: string, args: string): Promise<Com
           "/tasks — pending tasks\n" +
           "/overdue — overdue tasks\n" +
           "/habits — today's habits\n" +
-          "/finance — this month's summary\n" +
-          "/budget — budget vs actuals\n" +
+          "/finance — upcoming recurring bills\n" +
           "/upcoming — next 5 calendar events\n" +
           "/weather — current weather\n" +
           "/summary — full daily briefing\n" +
@@ -93,42 +92,21 @@ export async function executeCommand(command: string, args: string): Promise<Com
 
     case "finance": {
       const now = new Date();
-      const start = startOfMonth(now);
-      const end = endOfMonth(now);
-      const txs = await prisma.transaction.findMany({ where: { date: { gte: start, lte: end } } });
-      const income = txs.filter((t) => t.type === "INCOME").reduce((s, t) => s + t.amount, 0);
-      const expenses = txs.filter((t) => t.type === "EXPENSE").reduce((s, t) => s + t.amount, 0);
-      return {
-        text:
-          `💰 <b>Finance This Month</b>\n\n` +
-          `Income: +₹${income.toLocaleString("en-IN")}\n` +
-          `Expenses: -₹${expenses.toLocaleString("en-IN")}\n` +
-          `Balance: ₹${(income - expenses).toLocaleString("en-IN")}`,
-      };
-    }
-
-    case "budget": {
-      const now = new Date();
-      const month = now.getMonth() + 1;
-      const year = now.getFullYear();
-      const start = startOfMonth(now);
-      const end = endOfMonth(now);
-      const [budgets, txs] = await Promise.all([
-        prisma.budget.findMany({ where: { month, year } }),
-        prisma.transaction.findMany({
-          where: { date: { gte: start, lte: end }, type: "EXPENSE" },
-        }),
-      ]);
-      if (budgets.length === 0) return { text: "No budgets set for this month." };
-      const spent: Record<string, number> = {};
-      txs.forEach((t) => { spent[t.category] = (spent[t.category] || 0) + t.amount; });
-      const lines = budgets.map((b) => {
-        const s = spent[b.category] || 0;
-        const pct = Math.round((s / b.amount) * 100);
-        const bar = pct >= 100 ? "🔴" : pct >= 80 ? "🟡" : "🟢";
-        return `${bar} ${b.category}: ₹${s.toLocaleString("en-IN")} / ₹${b.amount.toLocaleString("en-IN")} (${pct}%)`;
+      const soon = addDays(now, 7);
+      const expenses = await prisma.recurringExpense.findMany({
+        where: { status: "ACTIVE", nextDueAt: { lte: soon } },
+        orderBy: { nextDueAt: "asc" },
+        take: 10,
       });
-      return { text: `📊 <b>Budget This Month</b>\n\n${lines.join("\n")}` };
+      if (expenses.length === 0) {
+        return { text: "✅ No recurring bills due in the next 7 days." };
+      }
+      const lines = expenses.map((e) => {
+        const diff = Math.ceil((new Date(e.nextDueAt).getTime() - now.getTime()) / 86400000);
+        const when = diff <= 0 ? "Due today" : diff === 1 ? "Tomorrow" : `In ${diff}d`;
+        return `• ${e.description} — ₹${e.amount.toLocaleString("en-IN")} · ${when}`;
+      });
+      return { text: `💸 <b>Upcoming Bills</b>\n\n${lines.join("\n")}` };
     }
 
     case "upcoming": {

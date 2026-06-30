@@ -7,8 +7,7 @@ import {
   subDays,
   startOfWeek,
   startOfMonth,
-  endOfMonth,
-  subMonths,
+  addDays,
 } from "date-fns";
 
 export async function getHabitAnalytics() {
@@ -105,44 +104,41 @@ export async function getTaskAnalytics() {
 export async function getFinanceAnalytics() {
   await requireAuth();
   const now = new Date();
-  const thisMonthStart = startOfMonth(now);
-  const thisMonthEnd = endOfMonth(now);
-  const lastMonthStart = startOfMonth(subMonths(now, 1));
-  const lastMonthEnd = endOfMonth(subMonths(now, 1));
+  const soon = addDays(now, 30);
 
-  const [thisTxs, lastTxs] = await Promise.all([
-    prisma.transaction.findMany({ where: { date: { gte: thisMonthStart, lte: thisMonthEnd } } }),
-    prisma.transaction.findMany({ where: { date: { gte: lastMonthStart, lte: lastMonthEnd } } }),
-  ]);
+  const expenses = await prisma.recurringExpense.findMany({
+    where: { status: "ACTIVE" },
+  });
 
-  const sum = (txs: typeof thisTxs, type: string) =>
-    txs.filter((t) => t.type === type).reduce((s, t) => s + t.amount, 0);
+  const totalMonthly = expenses.reduce((sum, e) => {
+    if (e.frequency === "MONTHLY") return sum + e.amount * e.interval;
+    if (e.frequency === "WEEKLY") return sum + (e.amount / e.interval) * 4.33;
+    if (e.frequency === "YEARLY") return sum + e.amount / 12;
+    return sum + e.amount;
+  }, 0);
 
-  const thisIncome = sum(thisTxs, "INCOME");
-  const thisExpenses = sum(thisTxs, "EXPENSE");
-  const lastIncome = sum(lastTxs, "INCOME");
-  const lastExpenses = sum(lastTxs, "EXPENSE");
+  const dueSoon = expenses.filter((e) => e.nextDueAt <= soon);
+  const dueSoonTotal = dueSoon.reduce((sum, e) => sum + e.amount, 0);
 
-  const byCat = thisTxs
-    .filter((t) => t.type === "EXPENSE")
-    .reduce((acc, t) => { acc[t.category] = (acc[t.category] || 0) + t.amount; return acc; }, {} as Record<string, number>);
+  const byCat = expenses.reduce((acc, e) => {
+    acc[e.category] = (acc[e.category] || 0) + e.amount;
+    return acc;
+  }, {} as Record<string, number>);
 
   const topCategories = Object.entries(byCat)
     .map(([category, amount]) => ({
       category,
       amount,
-      pct: thisExpenses > 0 ? (amount / thisExpenses) * 100 : 0,
+      pct: totalMonthly > 0 ? (amount / totalMonthly) * 100 : 0,
     }))
     .sort((a, b) => b.amount - a.amount)
     .slice(0, 6);
 
   return {
-    thisIncome,
-    thisExpenses,
-    balance: thisIncome - thisExpenses,
-    incomeDelta: lastIncome > 0 ? ((thisIncome - lastIncome) / lastIncome) * 100 : 0,
-    expensesDelta: lastExpenses > 0 ? ((thisExpenses - lastExpenses) / lastExpenses) * 100 : 0,
-    savingsRate: thisIncome > 0 ? Math.round(((thisIncome - thisExpenses) / thisIncome) * 100) : 0,
+    totalActive: expenses.length,
+    totalMonthly: Math.round(totalMonthly),
+    dueSoonCount: dueSoon.length,
+    dueSoonTotal,
     topCategories,
   };
 }
