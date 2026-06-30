@@ -17,7 +17,9 @@ export async function register() {
   const {
     runSchedulerInternal: runScheduler,
     processTaskReminders,
+    processCalendarReminders,
     sendMorningSummary,
+    sendEveningHabitNudge,
   } = await import("@/lib/services/scheduler-internal");
   const { approveExpenseInternal, snoozeExpenseInternal } = await import(
     "@/lib/services/recurring-expenses-internal"
@@ -30,7 +32,7 @@ export async function register() {
   // ── Scheduler cron (every 15 min) ───────────────────────────────
   cron.schedule("*/15 * * * *", async () => {
     try {
-      await Promise.all([runScheduler(), processTaskReminders()]);
+      await Promise.all([runScheduler(), processTaskReminders(), processCalendarReminders()]);
     } catch (err) {
       console.error("[scheduler] error:", err);
     }
@@ -43,6 +45,16 @@ export async function register() {
       await sendMorningSummary();
     } catch (err) {
       console.error("[scheduler] morning summary error:", err);
+    }
+  });
+
+  // ── Evening habit nudge (default 8pm, override with EVENING_NUDGE_HOUR) ──
+  const nudgeHour = Number(process.env.EVENING_NUDGE_HOUR ?? 20);
+  cron.schedule(`0 ${nudgeHour} * * *`, async () => {
+    try {
+      await sendEveningHabitNudge();
+    } catch (err) {
+      console.error("[scheduler] evening nudge error:", err);
     }
   });
 
@@ -103,11 +115,6 @@ export async function register() {
 
   bot.command("upcoming", async (ctx) => {
     const result = await executeCommand("upcoming", "");
-    await ctx.reply(result.text, { parse_mode: "HTML" });
-  });
-
-  bot.command("budget", async (ctx) => {
-    const result = await executeCommand("budget", "");
     await ctx.reply(result.text, { parse_mode: "HTML" });
   });
 

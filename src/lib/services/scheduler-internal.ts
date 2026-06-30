@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 import { processRecurringTasksDue } from "./recurring-tasks-internal";
 import { processRecurringExpensesDue } from "./recurring-expenses-internal";
 import { NotificationManager } from "@/lib/channels/notification-manager";
-import { format, startOfDay, endOfDay } from "date-fns";
+import { format, startOfDay, endOfDay, addMinutes } from "date-fns";
 
 export async function runSchedulerInternal(): Promise<{ tasks: number; expenses: number; pending: number }> {
   const [tasks, expResult] = await Promise.all([
@@ -67,6 +67,49 @@ export async function processTaskReminders(): Promise<number> {
   return tasks.length;
 }
 
+
+// Notify for calendar events starting in the next 15–30 minute window.
+// The 15-min cron guarantees each event falls in this window exactly once.
+export async function processCalendarReminders(): Promise<number> {
+  const now = new Date();
+  const windowStart = addMinutes(now, 15);
+  const windowEnd = addMinutes(now, 30);
+
+  const events = await prisma.calendarEvent.findMany({
+    where: { startTime: { gte: windowStart, lte: windowEnd } },
+    orderBy: { startTime: "asc" },
+  });
+
+  for (const event of events) {
+    const timeStr = format(new Date(event.startTime), "h:mm a");
+    await NotificationManager.sendToAll({
+      title: "📆 Upcoming Event",
+      body: `${event.title} starts at ${timeStr}`,
+      type: "INFO",
+    }).catch(() => {});
+  }
+
+  return events.length;
+}
+
+// Send evening nudge for any habits not yet completed today.
+export async function sendEveningHabitNudge(): Promise<void> {
+  const todayStr = format(new Date(), "yyyy-MM-dd");
+
+  const habits = await prisma.habit.findMany({
+    include: { logs: { where: { date: todayStr } } },
+  });
+
+  const pending = habits.filter((h) => !h.logs.some((l) => l.completed));
+  if (pending.length === 0) return;
+
+  const names = pending.map((h) => `${h.icon} ${h.name}`).join(", ");
+  await NotificationManager.sendToAll({
+    title: "🌙 Habit Reminder",
+    body: `Still pending: ${names}`,
+    type: "INFO",
+  }).catch(() => {});
+}
 
 // Send a morning briefing: overdue tasks, today's events, habit status, expenses due today.
 export async function sendMorningSummary(): Promise<void> {
